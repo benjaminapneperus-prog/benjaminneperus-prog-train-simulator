@@ -267,7 +267,7 @@ function step(dt) {
   bloom.strength = THREE.MathUtils.lerp(0.1, 0.45, day.night);
   towns.userData.poolMat.opacity = day.night * 0.8;
   if (towns.userData.sails) towns.userData.sails.rotation.z += dt * 0.45;
-  train.headlamp.intensity = 900 * Math.max(0.04, day.night);
+  train.headlamp.intensity = 600 * Math.max(0.04, day.night);
   train.fireLight.intensity = (1.5 + 2.5 * day.night) * (0.75 + 0.25 * Math.sin(shared.uTime.value * 13) * Math.sin(shared.uTime.value * 7.1));
   // particle lighting follows the sun
   sunCol.copy(day.light.color).multiplyScalar(Math.min(1.1, 0.35 + day.light.intensity * 0.28));

@@ -61,6 +61,7 @@ export class Hud {
   hideHint() {
     if (this.el.hint.classList.contains('gone')) return;
     this.el.hint.classList.add('gone');
+    setTimeout(() => (this.el.hint.style.display = 'none'), 1100);
     this.el.title.classList.add('small');
   }
 }

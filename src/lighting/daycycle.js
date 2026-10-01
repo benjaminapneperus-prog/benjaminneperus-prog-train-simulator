@@ -176,7 +176,7 @@ export class DayCycle {
     sample(SUN_COL, e, this._c);
     sample(SUN_COL_MORNING, e, this._c2);
     this._c.lerp(this._c2, mBlend);
-    const sunI = sampleNum([[-0.07, 0], [0.0, 0.5], [0.06, 1.5], [0.2, 2.4], [0.5, 2.9], [1.3, 3.0]], e);
+    const sunI = sampleNum([[-0.07, 0], [0.0, 0.7], [0.06, 1.85], [0.2, 2.5], [0.5, 2.9], [1.3, 3.0]], e);
     if (useSun) {
       this.light.color.copy(this._c);
       this.light.intensity = sunI * sunW;
@@ -188,7 +188,7 @@ export class DayCycle {
     // --- ambient
     sample(HEMI_SKY, e, this.hemi.color);
     sample(HEMI_GND, e, this.hemi.groundColor);
-    this.hemi.intensity = sampleNum([[-0.4, 1.05], [-0.1, 0.95], [0.0, 0.9], [0.15, 1.15], [0.5, 1.35], [1.3, 1.4]], e);
+    this.hemi.intensity = sampleNum([[-0.4, 1.05], [-0.1, 0.95], [0.0, 1.0], [0.15, 1.25], [0.5, 1.35], [1.3, 1.4]], e);
 
     // --- sky & fog
     const U = this.skyUniforms;
