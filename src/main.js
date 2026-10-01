@@ -96,6 +96,7 @@ const overlay = new Overlay(renderer, {
   onMute: (m) => audio.setMuted(m),
 });
 let whistling = false;
+let whistlePuff = 0;
 const keys = {};
 addEventListener('keydown', (e) => {
   if (keys[e.code]) return;
@@ -153,7 +154,9 @@ function journey(dt) {
       else msg = `Welcome to ${st.name} <em>★</em>`;
       hud.banner(msg, 5);
     }
+    if (ss.arrived && !ss.tooted && train.v > 0.3) { ss.tooted = true; audio.toot(0.6); whistlePuff = 0.6; }
     if (ss.arrived && train.v > 2 && !onPlatform) {
+      ss.tooted = false;
       ss.arrived = false;
       ss.announced = false;
       const next = STATIONS[(i + 1) % STATIONS.length];
@@ -221,7 +224,8 @@ function fx(dt) {
     steam.emit(p, { x: 0, y: 5, z: 0 }, { life: 1.6, s0: 0.4, s1: 2.2, alpha: 0.6, shade: 1.1, drag: 1.2 });
   }
   // whistle steam
-  if (whistling) {
+  whistlePuff = Math.max(0, whistlePuff - dt);
+  if (whistling || whistlePuff > 0) {
     const p = train.worldPoint(loco, loco.userData.whistle, new THREE.Vector3());
     steam.emit(p, tmpV.set(0, 4, 0).addScaledVector(heading, train.v * 0.3), { life: 1.2, s0: 0.3, s1: 2.0, alpha: 0.7, shade: 1.1, drag: 1.5 });
   }
