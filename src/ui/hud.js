@@ -27,6 +27,7 @@ export class Hud {
     };
     this._bannerUntil = 0;
     this._lastBanner = '';
+    setTimeout(() => this.hideHint(), 16000);
   }
 
   place(el, p, dx = 0, dy = 0) {

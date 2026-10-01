@@ -16,7 +16,7 @@ const key = (arr) => arr.map(([e, hex]) => [e, new Color(hex)]);
 const SUN_COL = key([[-0.1, 0xff4a20], [0.0, 0xff5a28], [0.07, 0xff8a40], [0.18, 0xffb466], [0.32, 0xffd59e], [0.55, 0xfff0dc], [1.3, 0xfff8f0]]);
 const SUN_COL_MORNING = key([[-0.1, 0xff7a5a], [0.0, 0xff8a60], [0.06, 0xffa070], [0.16, 0xffcf98], [0.32, 0xffead0], [0.6, 0xfff5ea], [1.3, 0xfff8f0]]);
 const ZENITH = key([[-0.4, 0x060b1e], [-0.18, 0x0d1736], [-0.06, 0x1f2c5e], [0.02, 0x3a5596], [0.14, 0x4a7cc6], [0.4, 0x3f7fd4], [1.3, 0x3a7ad2]]);
-const HORIZON = key([[-0.4, 0x0e1630], [-0.18, 0x1c2547], [-0.07, 0x5a4a74], [0.0, 0xf08a5c], [0.05, 0xf6a676], [0.14, 0xf2d2b0], [0.3, 0xc6def0], [1.3, 0xb8d8f2]]);
+const HORIZON = key([[-0.4, 0x0e1630], [-0.18, 0x1c2547], [-0.07, 0x5a4a74], [0.0, 0xf08a5c], [0.05, 0xf6a676], [0.14, 0xf4c49a], [0.28, 0xe6d6c4], [0.45, 0xc6def0], [1.3, 0xb8d8f2]]);
 const HORIZON_MORNING = key([[-0.4, 0x0e1630], [-0.18, 0x1c2547], [-0.07, 0x6a5a86], [0.0, 0xf3a08a], [0.05, 0xf6b898], [0.14, 0xeed8c2], [0.3, 0xc8e0f2], [1.3, 0xb8d8f2]]);
 const HEMI_SKY = key([[-0.4, 0x4a64b0], [-0.12, 0x4a5c9c], [0.0, 0x8a7fae], [0.1, 0xb3b5d4], [0.3, 0xc4daf6], [1.3, 0xcfe2ff]]);
 const HEMI_GND = key([[-0.4, 0x22263a], [0.0, 0x4a3a34], [0.2, 0x7a6a56], [1.3, 0x8a7a62]]);

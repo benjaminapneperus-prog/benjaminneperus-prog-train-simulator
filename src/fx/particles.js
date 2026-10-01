@@ -129,9 +129,9 @@ void main() {
   p.z += cos(uTime * 0.5 + aSeed * 23.0) * 1.2;
   p = mod(p - uCenter + box * 0.5, box) - box * 0.5 + uCenter;
   vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
-  gl_PointSize = (0.18 + aSeed * 0.2) * uScale / max(0.5, -mvPosition.z);
+  gl_PointSize = min(7.0, (0.18 + aSeed * 0.2) * uScale / max(0.5, -mvPosition.z));
   gl_Position = projectionMatrix * mvPosition;
-  vA = smoothstep(80.0, 20.0, -mvPosition.z);
+  vA = smoothstep(80.0, 20.0, -mvPosition.z) * smoothstep(2.0, 7.0, -mvPosition.z);
   #include <fog_vertex>
 }`;
 const SNOW_FS = `

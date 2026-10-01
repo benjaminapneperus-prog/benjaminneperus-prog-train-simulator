@@ -443,6 +443,12 @@ export class Terrain {
   _shape() {
     const r = this.route;
     const pads = LAYOUT.pads || [];
+    for (const p of pads) {
+      if (p.y === 'auto') {
+        const [i, j] = this.colOf(p.x, p.z);
+        p.y = Math.round(this.nat[this.idx(i, j)] / V) * V;
+      }
+    }
     for (let j = 0; j < NZ; j++) {
       for (let i = 0; i < NX; i++) {
         const k = j * NX + i;

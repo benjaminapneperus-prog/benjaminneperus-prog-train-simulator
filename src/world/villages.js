@@ -530,6 +530,7 @@ export function buildSettlements(T, route) {
   group.name = 'settlements';
 
   for (const b of BUILDINGS) {
+    if (b.kind === 'chalet' || b.kind === 'chapel') b.y = T.topAt(b.x, b.z);
     kit.set(b.x, b.y, b.z, b.yaw);
     let topY;
     if (b.kind === 'chalet') topY = chalet(kit, b, out);

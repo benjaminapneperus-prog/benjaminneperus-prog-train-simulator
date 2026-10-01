@@ -189,10 +189,10 @@ function fx(dt) {
     lastChuffPhase = phase;
     const strength = working ? 0.45 + 0.55 * Math.min(1, train.lever + (1 - sp) * 0.3) : 0.18;
     tmpV.copy(heading).multiplyScalar(train.v * 0.25).add({ x: (Math.random() - 0.5) * 1.2, y: 5 + strength * 5, z: (Math.random() - 0.5) * 1.2 });
-    steam.emit(chim, tmpV, { life: 2.6 + strength * 2.2, s0: 0.9, s1: 5 + strength * 4, alpha: 0.55 + strength * 0.3, shade: working ? 0.82 : 0.96, drag: 0.9 });
+    steam.emit(chim, tmpV, { life: 2.2 + strength * 1.8, s0: 0.8, s1: 3.2 + strength * 2.6, alpha: 0.5 + strength * 0.3, shade: working ? 0.82 : 0.96, drag: 0.9 });
     if (strength > 0.4) {
       tmpV.y *= 0.7;
-      steam.emit(chim, tmpV, { life: 3.5, s0: 1.2, s1: 7, alpha: 0.35, shade: 0.75, drag: 0.7 });
+      steam.emit(chim, tmpV, { life: 3.0, s0: 1.0, s1: 4.6, alpha: 0.3, shade: 0.75, drag: 0.7 });
     }
     audio.chuff(working ? strength : 0.12);
   }

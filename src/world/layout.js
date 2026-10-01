@@ -67,13 +67,11 @@ export const BUILDINGS = [
 export const LAYOUT = {
   pads: [
     // station shelf
-    { x: (FROST.from[0] + FROST.to[0]) / 2, z: -158, hw: 50, hd: 16, y: 36, feather: 10 },
-    { x: -205, z: -180, hw: 58, hd: 10, y: 36, feather: 8 },
-    { x: -150, z: -195, hw: 12, hd: 12, y: 36, feather: 8 },
-    { x: -210, z: -199, hw: 44, hd: 8, y: 34, feather: 6 },
-    { x: -217, z: -217, hw: 26, hd: 8, y: 32, feather: 12 },
-    { x: -214, z: -130, hw: 6, hd: 5, y: 40, feather: 6 },
-    { x: -178, z: -131, hw: 6, hd: 5, y: 42, feather: 6 },
+    { x: (FROST.from[0] + FROST.to[0]) / 2, z: -160, hw: 48, hd: 13, y: 36, feather: 14 },
+    // each alpine house gets its own small pad on the natural slope
+    ...BUILDINGS.filter((b) => b.kind === 'chalet' || b.kind === 'chapel').map((b) => ({
+      x: b.x, z: b.z, hw: Math.max(b.w, b.d) / 2 + 1.6, hd: Math.max(b.w, b.d) / 2 + 1.6, y: 'auto', feather: 5,
+    })),
     // Meadowbrook
     { x: (MEADOW.from[0] + MEADOW.to[0]) / 2, z: 210, hw: 48, hd: 12, y: 12, feather: 8 },
     { x: -130, z: 232, hw: 58, hd: 14, y: 12, feather: 8 },
