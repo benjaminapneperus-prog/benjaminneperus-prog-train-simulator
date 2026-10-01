@@ -265,7 +265,7 @@ export function buildVegetation(T, route) {
     for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) {
       if (!T.inside(i + a, j + b)) continue;
       const k = (j + b) * NX + i + a;
-      T.occ[k] = Math.max(T.occ[k], it.y + it.H);
+      T.occ[k] = Math.max(T.occ[k], it.y + it.H * 0.6); // camera may brush the canopy
     }
   }
   group.userData.counts = Object.fromEntries(Object.entries(species).map(([k, v]) => [k, v.items.length]));

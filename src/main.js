@@ -258,6 +258,9 @@ function step(dt) {
   rig.update(dt);
   day.update(dt, camera, rig.focus);
   updateGlow(day.night);
+  // bloom only for lamps/windows: very high threshold by day so sunlit snow never glows
+  bloom.threshold = THREE.MathUtils.lerp(4.5, 1.9, day.night);
+  bloom.strength = THREE.MathUtils.lerp(0.1, 0.45, day.night);
   towns.userData.poolMat.opacity = day.night * 0.8;
   if (towns.userData.sails) towns.userData.sails.rotation.z += dt * 0.45;
   train.headlamp.intensity = 900 * Math.max(0.04, day.night);
@@ -271,7 +274,7 @@ function step(dt) {
   fx(dt);
   const [ci, cj] = T.colOf(rig.focus.x, rig.focus.z);
   const north = T.inside(ci, cj) ? T.north[T.idx(ci, cj)] : 0;
-  const alpine = Math.max(north, THREE.MathUtils.smoothstep(rig.focus.y, 34, 46));
+  const alpine = Math.max(north, THREE.MathUtils.smoothstep(rig.focus.y, 55, 70));
   snow.update(dt, camera.position, alpine * 0.9, shCol.clone().lerp(new THREE.Color(1, 1, 1), 0.6));
   ambient.update(dt, camera, day);
   audio.update(dt, { speed: train.v, vmax: VMAX, braking: train.acc < -0.8, idleSteam: train.v < 0.5 ? 1 : 0.3, alpine, night: day.night });

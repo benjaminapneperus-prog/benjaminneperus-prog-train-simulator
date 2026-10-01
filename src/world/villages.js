@@ -14,7 +14,7 @@ const STONE = 0x8e877d, STONE_L = 0xa59d91, DARKWOOD = 0x5a3b28, WOOD = 0x7d5638
 const WHITE = 0xf3efe6, IRON = 0x2e3232;
 
 const mainMat = voxelMaterial({ cell: 0.5, local: true, edge: 0.09, jitter: 0.06, strata: 0 });
-export const houseWindowGlow = glowMaterial(0x2c3a46, 0xffbe6a, 1.7);
+export const houseWindowGlow = glowMaterial(0x2c3a46, 0xffbe6a, 2.5);
 const darkWindow = voxelMaterial({ cell: 0.5, local: true, edge: 0, jitter: 0, strata: 0 });
 export const streetLampGlow = glowMaterial(0xfff0cf, 0xffcf7a, 4.5);
 

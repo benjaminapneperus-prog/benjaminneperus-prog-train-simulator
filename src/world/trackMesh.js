@@ -61,7 +61,7 @@ export function buildTrack(route, terrain) {
   // --- ballast bed (with a skirt on earthworks so it never floats)
   const alpineAt = (s) => {
     const n = Math.round(route.wrap(s) / route.ds) % route.N;
-    return terrain.alpineAlong[n] > 0.5 || route.Y[n] > 34;
+    return terrain.alpineAlong[n] > 0.5 || route.Y[n] > 49;
   };
   const ballastCol = (s) => (alpineAt(s) ? 0xb9b6b0 : 0x8f8679);
   const shoulderCol = (s) => (alpineAt(s) ? 0xe4e8ee : 0x7d7466);

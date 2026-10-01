@@ -71,7 +71,7 @@ function groundUnder(terrain, p, t, r, halfLen, halfWid) {
   return m;
 }
 
-const isCold = (route, s) => route.height(s) > 34 || route.Z[Math.round(route.wrap(s) / route.ds) % route.N] < -40;
+const isCold = (route, s) => route.Z[Math.round(route.wrap(s) / route.ds) % route.N] < -30 || route.height(s) > 49;
 const stone = (route, s, k) => (isCold(route, s) ? STONE_COLD : STONE)[Math.floor(hash2(Math.floor(s * 3), k, 11) * 5)];
 
 function deckAndParapets(bb, route, s0, s1, sides = [-1, 1]) {

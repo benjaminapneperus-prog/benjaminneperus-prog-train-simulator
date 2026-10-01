@@ -68,3 +68,10 @@ little reward. There is no score to chase — the point is the ride.
   smoke in the villages, snowfall on the alpine side, drifting voxel clouds
   and birds, and procedural WebAudio for chuffs, rail joints, whistle, hiss
   and brakes.
+
+## Hosting
+
+The build uses relative paths, so `dist/` can be served from any static host.
+`.github/workflows/pages.yml` builds and deploys to GitHub Pages on pushes to
+`main` (enable Pages with "GitHub Actions" as the source in the repository
+settings).

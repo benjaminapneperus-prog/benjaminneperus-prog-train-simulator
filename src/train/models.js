@@ -13,7 +13,7 @@ export const C = {
 
 const bodyMat = voxelMaterial({ cell: 0.25, edge: 0.07, jitter: 0.03, strata: 0, local: true });
 const metalMat = voxelMaterial({ cell: 0.25, edge: 0.05, jitter: 0.02, strata: 0, local: true, standard: true, metalness: 0.35, roughness: 0.45 });
-export const windowGlow = glowMaterial(0x30404a, 0xffc372, 1.6);
+export const windowGlow = glowMaterial(0x30404a, 0xffc372, 2.4);
 export const lampGlow = glowMaterial(0xfff1c9, 0xffd890, 6.0);
 export const fireGlow = glowMaterial(0x7a2a10, 0xff7a2a, 2.5);
 lampGlow.userData.glow.min = 0.35;
