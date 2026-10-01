@@ -1,0 +1,20 @@
+{
+  "name": "frostpeak-loop",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A cozy 3D voxel steam train journey around a snowy mountain.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@fontsource/silkscreen": "^5.3.0",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "vite": "^8.3.2"
+  }
+}
