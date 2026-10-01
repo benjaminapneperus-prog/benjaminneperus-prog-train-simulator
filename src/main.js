@@ -23,7 +23,10 @@ import { buildAmbient } from './fx/ambient.js';
 const params = new URLSearchParams(location.search);
 const app = document.getElementById('app');
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+const LOW = params.has('lowfx');
+const MAX_PR = LOW ? 0.6 : Math.min(devicePixelRatio, 1.75);
+let pixelRatio = MAX_PR;
+renderer.setPixelRatio(pixelRatio);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -69,7 +72,8 @@ const rt = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.Ha
 const composer = new EffectComposer(renderer, rt);
 composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.32, 0.55, 0.9);
-composer.addPass(bloom);
+if (!LOW) composer.addPass(bloom);
+if (LOW) day.light.shadow.mapSize.set(1024, 1024);
 composer.addPass(new OutputPass());
 
 // --------------------------------------------------------------- controls
@@ -281,9 +285,23 @@ function render() {
   composer.render();
   overlay.render();
 }
+// Adaptive resolution keeps slower GPUs smooth.
+let ema = 1 / 60, adaptT = 0;
+function adapt(raw) {
+  ema += (raw - ema) * 0.05;
+  adaptT += raw;
+  if (adaptT < 2.5 || LOW) return;
+  adaptT = 0;
+  let next = pixelRatio;
+  if (ema > 1 / 36 && pixelRatio > 0.7) next = Math.max(0.7, pixelRatio - 0.15);
+  else if (ema < 1 / 57 && pixelRatio < MAX_PR) next = Math.min(MAX_PR, pixelRatio + 0.1);
+  if (next !== pixelRatio) { pixelRatio = next; renderer.setPixelRatio(pixelRatio); layout(); }
+}
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000);
+  const raw = (now - last) / 1000;
+  const dt = Math.min(0.05, raw);
   last = now;
+  adapt(raw);
   step(dt);
   render();
   requestAnimationFrame(frame);
@@ -292,6 +310,7 @@ function layout() {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  composer.setPixelRatio(renderer.getPixelRatio());
   composer.setSize(innerWidth, innerHeight);
   overlay.resize();
   const ps = renderer.getPixelRatio() * innerHeight * 0.9;
@@ -310,7 +329,9 @@ window.__game = {
   setTime: (h) => day.setHours(h),
   setLever: (v) => { overlay.setLever(v, true); },
   teleport(s, opts = {}) { train.s = route.wrap(s); train.v = opts.v ?? 0; train.place(); lastS = train.s; rig.snap(); },
-  simulate(seconds, dt = 1 / 30) { for (let t = 0; t < seconds; t += dt) step(dt); render(); },
+  simulate(seconds, dt = 1 / 30, draw = true) { for (let t = 0; t < seconds; t += dt) step(dt); if (draw) render(); },
   render,
   frontS,
+  ui: () => { const d = overlay.debugPoints(); delete d.arc; return d; },
+  state: () => ({ s: train.s, v: train.v, lever: train.lever, hours: day.hours, yaw: rig.yawTarget, dist: rig.distTarget, front: frontS(), banner: hud.el.bannerText.textContent }),
 };

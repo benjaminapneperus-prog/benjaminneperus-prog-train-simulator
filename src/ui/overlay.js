@@ -71,7 +71,8 @@ export class Overlay {
   constructor(renderer, { onLever, onRotate, onZoom, onTime, onWhistle, onMute, onNotch }) {
     this.renderer = renderer;
     this.scene = new Scene();
-    this.camera = new OrthographicCamera(0, 1, 1, 0, -1000, 1000);
+    this.camera = new OrthographicCamera(0, 1, 1, 0, 1, 2000);
+    this.camera.position.z = 800; // rays must start in front of every control
     this.cb = { onLever, onRotate, onZoom, onTime, onWhistle, onMute, onNotch };
     const key = new DirectionalLight(0xffffff, 2.1);
     key.position.set(-0.5, 0.8, 1);
@@ -336,6 +337,18 @@ export class Overlay {
       time: proj(Cg, new Vector3(0, 3, 17)),
       u: this.u,
     };
+  }
+
+  // Screen positions of the interactive parts (used by automated tests).
+  debugPoints() {
+    this.scene.updateMatrixWorld();
+    const sp = (obj, v = new Vector3()) => { const p = v.applyMatrix4(obj.matrixWorld); return { x: p.x, y: this.H - p.y }; };
+    const knob = sp(this.arm, new Vector3(-this.armLen - 50, 0, 40));
+    const out = { knob, sun: sp(this.sun, new Vector3(0, 0, 20)) };
+    for (const [k, b] of Object.entries(this.btns)) out[k] = sp(b, new Vector3(0, 0, 20));
+    out.whistle = sp(this.whistleBtn, new Vector3(0, 0, 20));
+    out.arc = (hours) => null;
+    return out;
   }
 
   // ----------------------------------------------------------- input --

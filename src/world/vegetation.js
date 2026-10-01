@@ -12,14 +12,14 @@ const mat = voxelMaterial({ cell: 0.5, local: true, edge: 0.07, jitter: 0.1, str
 
 function fir(snow, h = 1, dark = 0x2c5642) {
   const bb = new BoxBuilder();
-  bb.block(0, -0.5, 0, 0.7, 1.9 * h, 0.7, 0x5e4130);
+  bb.block(0, -0.5, 0, 0.7, 1.9 * h, 0.7, 0x5e4130, { noBottom: true });
   const tiers = [[4.0, 1.15], [3.3, 1.1], [2.6, 1.05], [1.9, 1.0], [1.2, 0.9], [0.6, 0.7]];
   let y = 1.2 * h;
   tiers.forEach(([w, th], i) => {
     const c = i % 2 ? dark : 0x325f48;
-    bb.block(0, y, 0, w, th, w, c, { ao: 0.75 });
+    bb.block(0, y, 0, w, th, w, c, { ao: 0.75, noBottom: i > 0 });
     if (snow) {
-      bb.block(0, y + th - 0.01, 0, w * 0.82, 0.26, w * 0.82, 0xf1f5fa);
+      bb.block(0, y + th - 0.01, 0, w * 0.82, 0.26, w * 0.82, 0xf1f5fa, { noBottom: true });
       if (w > 2) for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) bb.block(dx * w * 0.42, y + th - 0.3, dz * w * 0.42, 0.5, 0.32, 0.5, 0xf1f5fa);
     }
     y += th * 0.78;
@@ -34,8 +34,8 @@ function spruce(snow) {
   const tiers = [3.0, 2.7, 2.35, 2.0, 1.7, 1.35, 1.0, 0.6];
   let y = 1.4;
   tiers.forEach((w, i) => {
-    bb.block(0, y, 0, w, 1.0, w, i % 2 ? 0x264c3c : 0x2d5845, { ao: 0.78 });
-    if (snow && i % 2 === 0) bb.block(0, y + 0.99, 0, w * 0.7, 0.2, w * 0.7, 0xeef3f8);
+    bb.block(0, y, 0, w, 1.0, w, i % 2 ? 0x264c3c : 0x2d5845, { ao: 0.78, noBottom: i > 0 });
+    if (snow && i % 2 === 0) bb.block(0, y + 0.99, 0, w * 0.7, 0.2, w * 0.7, 0xeef3f8, { noBottom: true });
     y += 0.92;
   });
   bb.block(0, y, 0, 0.3, 0.6, 0.3, 0x2d5845);
@@ -88,9 +88,9 @@ function rock(snow) {
 
 function tuft() {
   const bb = new BoxBuilder();
-  bb.block(0, 0, 0, 0.18, 0.5, 0.18, 0x5d9a35);
-  bb.block(0.22, 0, 0.1, 0.16, 0.36, 0.16, 0x6aa83c);
-  bb.block(-0.18, 0, 0.16, 0.16, 0.42, 0.16, 0x4f8a2e);
+  bb.block(0, 0, 0, 0.18, 0.5, 0.18, 0x5d9a35, { noBottom: true });
+  bb.block(0.22, 0, 0.1, 0.16, 0.36, 0.16, 0x6aa83c, { noBottom: true });
+  bb.block(-0.18, 0, 0.16, 0.16, 0.42, 0.16, 0x4f8a2e, { noBottom: true });
   return bb.geometry();
 }
 
@@ -227,24 +227,37 @@ export function buildVegetation(T, route) {
   const m4 = new Matrix4(), q4 = new Quaternion(), e = new Euler(), sc = new Vector3(), pos = new Vector3(), col = new Color();
   const flowerCols = [0xf4e04d, 0xffffff, 0xe85d75, 0x9b7be0, 0xf29a3a];
   const occ = [];
+  // Tile the world so instanced batches can be frustum- and shadow-culled.
+  const TILE = 160;
   for (const [name, sp] of Object.entries(species)) {
     if (!sp.items.length) continue;
-    const im = new InstancedMesh(sp.geo, mat, sp.items.length);
+    const tiles = new Map();
     sp.items.forEach((it, idx) => {
-      e.set(0, it.yaw, 0);
-      q4.setFromEuler(e);
-      m4.compose(pos.set(it.x, it.y, it.z), q4, sc.set(it.scale, it.scale * (0.92 + hash2(idx, 3, 9) * 0.2), it.scale));
-      im.setMatrixAt(idx, m4);
-      if (name === 'flower') col.setHex(flowerCols[idx % flowerCols.length]);
-      else col.setRGB(it.tint, it.tint * (0.97 + hash2(idx, 1, 2) * 0.06), it.tint * 0.96);
-      im.setColorAt(idx, col);
+      it.idx = idx;
+      const key = Math.floor((it.x - WORLD.x0) / TILE) + ',' + Math.floor((it.z - WORLD.z0) / TILE);
+      let arr = tiles.get(key);
+      if (!arr) tiles.set(key, (arr = []));
+      arr.push(it);
       const H = { firSnow: 8, firSnowB: 9, fir: 8, spruceSnow: 9.5, spruce: 9.5, pine: 8.6, pineTall: 11.2, broad: 6.6, broadAutumn: 6.6 }[name];
       if (H && it.scale > 0.6) occ.push({ ...it, H: H * it.scale });
     });
-    im.castShadow = sp.cast;
-    im.receiveShadow = true;
-    im.computeBoundingSphere();
-    group.add(im);
+    for (const items of tiles.values()) {
+      const im = new InstancedMesh(sp.geo, mat, items.length);
+      items.forEach((it, n) => {
+        e.set(0, it.yaw, 0);
+        q4.setFromEuler(e);
+        m4.compose(pos.set(it.x, it.y, it.z), q4, sc.set(it.scale, it.scale * (0.92 + hash2(it.idx, 3, 9) * 0.2), it.scale));
+        im.setMatrixAt(n, m4);
+        if (name === 'flower') col.setHex(flowerCols[it.idx % flowerCols.length]);
+        else col.setRGB(it.tint, it.tint * (0.97 + hash2(it.idx, 1, 2) * 0.06), it.tint * 0.96);
+        im.setColorAt(n, col);
+      });
+      im.castShadow = sp.cast;
+      im.receiveShadow = true;
+      im.computeBoundingSphere();
+      im.computeBoundingBox?.();
+      group.add(im);
+    }
   }
   // Feed tall trees into the camera occupancy grid (so it rises over forests).
   for (const it of occ) {
