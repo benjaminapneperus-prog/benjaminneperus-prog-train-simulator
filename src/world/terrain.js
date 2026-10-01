@@ -106,8 +106,8 @@ function mountain(x, z) {
   const d = z - ridgeZ(x);
   // Elongated ridge with a knife-edge crest: broad base, slim upper body.
   const along = clamp(1 - Math.pow(Math.abs(x) / 310, 2.4), 0, 1);
-  let crest = 78 * along;
-  for (const p of PEAKS) crest += p.h * Math.exp(-(((x - p.x) / p.rx) ** 2));
+  let crest = 84 * along;
+  for (const p of PEAKS) crest += p.h * 1.4 * Math.exp(-(((x - p.x) / p.rx) ** 2));
   crest += 6 * valueNoise(x * 0.03, 1.7);
   const w = (d < 0 ? 235 : 175) * (0.75 + 0.25 * along);
   const t = clamp(Math.abs(d) / w, 0, 1);
