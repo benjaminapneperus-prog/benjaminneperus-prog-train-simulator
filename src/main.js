@@ -65,6 +65,8 @@ scene.add(steam.points);
 const snow = new Snowfall();
 scene.add(snow.points);
 const audio = new TrainAudio();
+let soundAnnounced = false;
+audio.onStart = () => { if (!soundAnnounced && !audio.muted) { soundAnnounced = true; hud.banner('Sound on <em>♪</em>', 2.5); } };
 const hud = new Hud();
 
 // ---------------------------------------------------------- post-process
@@ -331,7 +333,7 @@ requestAnimationFrame(frame);
 
 // Test / debug hooks (used by the automated play-through)
 window.__game = {
-  THREE, scene, camera, renderer, T, route, train, rig, day, overlay, hud, STATIONS,
+  THREE, scene, camera, renderer, T, route, train, rig, day, overlay, hud, STATIONS, audio,
   ready: true,
   setTime: (h) => day.setHours(h),
   setLever: (v) => { overlay.setLever(v, true); },

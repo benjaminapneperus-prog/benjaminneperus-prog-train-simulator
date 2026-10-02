@@ -16,7 +16,7 @@ export class Hud {
       <div id="hint">
         <p><b>Drag the lever DOWN</b> to get steam up.<br/>Push it <b>UP</b> to brake and stop.</p>
         <p class="sub">Drag the little sun to change the time of day · rotate &amp; zoom with the buttons<br/>
-        Keys: W/S lever · Q/E rotate · +/- zoom · H whistle</p>
+        Keys: W/S lever · Q/E rotate · +/- zoom · H whistle<br/>Sound starts with your first click or key press</p>
       </div>`;
     document.body.appendChild(root);
     this.el = {

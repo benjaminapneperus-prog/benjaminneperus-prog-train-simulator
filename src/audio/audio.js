@@ -5,13 +5,14 @@ export class TrainAudio {
     this.muted = false;
     this._whistle = null;
     const unlock = () => this._init();
-    addEventListener('pointerdown', unlock, { once: false });
-    addEventListener('keydown', unlock, { once: false });
+    // Capture phase, so clicks on the voxel controls (which stop propagation)
+    // still unlock audio on the very first interaction.
+    for (const ev of ['pointerdown', 'touchstart', 'keydown', 'click']) addEventListener(ev, unlock, { capture: true, passive: true });
   }
 
   _init() {
     if (this.ctx) {
-      if (this.ctx.state === 'suspended') this.ctx.resume();
+      if (this.ctx.state === 'suspended') this.ctx.resume().then(() => this.onStart?.());
       return;
     }
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -46,6 +47,9 @@ export class TrainAudio {
     sq.connect(sqg).connect(this.master);
     sq.start(); lfo.start();
     this.squeal = sqg;
+    const started = () => this.onStart?.();
+    if (ctx.state === 'running') started();
+    else ctx.resume().then(started).catch(() => {});
   }
 
   _loopNoise(type, freq, q, gain) {
