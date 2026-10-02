@@ -17,7 +17,7 @@ export class Hud {
         <p><b>Drag the lever DOWN</b> to get steam up.<br/>Push it <b>UP</b> to brake and stop.</p>
         <p class="sub">Drag the little sun to set the time of day · a full day takes 4 minutes<br/>
         Drag the world to look around, scroll to zoom<br/>
-        Keys: W/S lever · Q/E rotate · +/- zoom · H whistle · P pause time · M music · N sound</p>
+        Keys: W/S lever · Q/E rotate · +/- zoom · H whistle · V cab view · P pause time · M music · N sound</p>
       </div>`;
     document.body.appendChild(root);
     this.el = {

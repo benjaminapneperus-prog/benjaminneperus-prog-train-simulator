@@ -17,7 +17,7 @@ void main() {
   vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
   gl_PointSize = aSize * uScale / max(0.5, -mvPosition.z);
   gl_Position = projectionMatrix * mvPosition;
-  vAlpha = aAlpha; vShade = aShade; vSeed = aSeed;
+  vAlpha = aAlpha * smoothstep(1.2, 5.0, -mvPosition.z); vShade = aShade; vSeed = aSeed;
   #include <fog_vertex>
 }`;
 const FS = `

@@ -38,6 +38,7 @@ const ICONS = {
   rotR: ['..####..', '.#....#.', '#......#', '.......#', '...#...#', '..##..#.', '.#####..', '..##....'].reverse(),
   zoomIn: ['...##...', '...##...', '...##...', '########', '########', '...##...', '...##...', '...##...'],
   zoomOut: ['........', '........', '........', '########', '########', '........', '........', '........'],
+  eye: ['........', '..####..', '.#....#.', '#..##..#', '#..##..#', '.#....#.', '..####..', '........'],
   whistle: ['...##...', '...##...', '..####..', '..#..#..', '..####..', '..#..#..', '..####..', '.######.'].reverse(),
   sound: ['...#.....', '..##..#..', '####...#.', '####.#.#.', '####.#.#.', '####...#.', '..##..#..', '...#.....'].reverse(),
   mute: ['...#.....', '..##.....', '####.#.#.', '####..#..', '####..#..', '####.#.#.', '..##.....', '...#.....'].reverse(),
@@ -68,12 +69,12 @@ function button(icon, size = 58, top = CREAM, side = WOOD) {
 }
 
 export class Overlay {
-  constructor(renderer, { onLever, onTime, onWhistle, onNotch }) {
+  constructor(renderer, { onLever, onTime, onWhistle, onNotch, onCab }) {
     this.renderer = renderer;
     this.scene = new Scene();
     this.camera = new OrthographicCamera(0, 1, 1, 0, 1, 2000);
     this.camera.position.z = 800; // rays must start in front of every control
-    this.cb = { onLever, onTime, onWhistle, onNotch };
+    this.cb = { onLever, onTime, onWhistle, onNotch, onCab };
     const key = new DirectionalLight(0xffffff, 2.1);
     key.position.set(-0.5, 0.8, 1);
     this.scene.add(key, new AmbientLight(0xffffff, 1.05));
@@ -187,6 +188,9 @@ export class Overlay {
     this.whistleBtn = button('whistle', 46, 0xf6d98a, BRASS_D);
     this.whistleBtn.position.set(-60, 128, 6);
     g.add(this.whistleBtn);
+    this.cabBtn = button('eye', 40);
+    this.cabBtn.position.set(-64, 72, 6);
+    g.add(this.cabBtn);
 
     this.leverSize = { W, H };
     this.scene.add(g);
@@ -315,7 +319,7 @@ export class Overlay {
     };
     return {
       stop: lab(0), full: lab(1),
-      speed: proj(L, new Vector3(this.dialCenter.x - 4, this.dialCenter.y - 56, 14)),
+      speed: proj(L, new Vector3(this.dialCenter.x + 14, this.dialCenter.y - 56, 14)),
       time: proj(Cg, new Vector3(0, this.plateY, 17)),
       u: this.u,
     };
@@ -329,6 +333,7 @@ export class Overlay {
     const out = { knob, sun: sp(this.sun, new Vector3(0, 0, 20)) };
     for (const [k, b] of Object.entries(this.btns)) out[k] = sp(b, new Vector3(0, 0, 20));
     out.whistle = sp(this.whistleBtn, new Vector3(0, 0, 20));
+    out.cab = sp(this.cabBtn, new Vector3(0, 0, 20));
     out.arc = (hours) => null;
     return out;
   }
@@ -357,11 +362,12 @@ export class Overlay {
 
   _bind(dom) {
     const buttons = () => [
-      this.whistleBtn.userData.hit,
+      this.whistleBtn.userData.hit, this.cabBtn.userData.hit,
     ];
     const plates = () => [this.leverGroup.children[0], this.consoleGroup.children[0]];
     const findBtn = (hit) => {
       if (this.whistleBtn.userData.hit === hit) return ['whistle', this.whistleBtn];
+      if (this.cabBtn.userData.hit === hit) return ['cab', this.cabBtn];
       return null;
     };
     addEventListener('pointerdown', (e) => {
@@ -384,6 +390,7 @@ export class Overlay {
           b.userData.pressed = 1;
           this.drag = { kind: 'button', key: k, btn: b, id: e.pointerId, t0: performance.now() };
           if (k === 'whistle') this.cb.onWhistle(true);
+          if (k === 'cab') this.cabOn = this.cb.onCab();
         } else this.drag = { kind: 'plate', id: e.pointerId };
       }
     }, { capture: true });
@@ -464,10 +471,11 @@ export class Overlay {
     // compass: north (-z) relative to the camera's view
     this.compass.rotation.z = cameraYaw;
     // buttons
-    const btnList = [this.whistleBtn];
+    const btnList = [this.whistleBtn, this.cabBtn];
+    this.cabBtn.userData.latched = this.cabOn;
     for (const b of btnList) {
       const ud = b.userData;
-      ud.depth = (ud.depth ?? 0) + ((ud.pressed ? -9 : 0) - (ud.depth ?? 0)) * (1 - Math.exp(-dt * 30));
+      ud.depth = (ud.depth ?? 0) + ((ud.pressed ? -9 : ud.latched ? -6 : 0) - (ud.depth ?? 0)) * (1 - Math.exp(-dt * 30));
       ud.cap.position.z = ud.depth;
     }
   }

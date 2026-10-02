@@ -85,7 +85,14 @@ const overlay = new Overlay(renderer, {
   onNotch: () => audio.notch(),
   onTime: (h) => day.setHours(h),
   onWhistle: (on) => { whistling = on; audio.whistle(on); },
+  onCab: () => toggleCab(),
 });
+function toggleCab() {
+  const on = rig.toggleCab();
+  overlay.cabOn = on;
+  hud.banner(on ? 'Cab-roof view' : 'Outside view', 2);
+  return on;
+}
 // One in-game day lasts four real minutes; dragging the sun sets the clock
 // and the day carries on from there.
 const DAY_SECONDS = 240;
@@ -101,6 +108,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'Equal' || e.code === 'NumpadAdd') { rig.zoom(1); rig.setHold('zoom', 1); }
   if (e.code === 'Minus' || e.code === 'NumpadSubtract') { rig.zoom(-1); rig.setHold('zoom', -1); }
   if (e.code === 'KeyH' || e.code === 'Space') { whistling = true; audio.whistle(true); e.preventDefault(); }
+  if (e.code === 'KeyV') toggleCab();
   if (e.code === 'KeyP') { autoTime = !autoTime; hud.banner(autoTime ? 'Time is running' : 'Time paused', 2); }
   if (e.code === 'KeyN') { audio.setMuted(!audio.muted); hud.banner(audio.muted ? 'Sound off' : 'Sound on <em>♪</em>', 2); }
   if (e.code === 'KeyM') hud.banner(audio.toggleMusic() ? 'Music on <em>♪</em>' : 'Music off', 2);

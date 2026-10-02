@@ -45,6 +45,7 @@ export class CameraRig {
       if (!drag || e.pointerId !== drag.id) return;
       const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       drag.x = e.clientX; drag.y = e.clientY;
+      if (this.cab) return;
       this.yawTarget -= dx * 0.006;
       this.pitchTarget = MathUtils.clamp(this.pitchTarget + dy * 0.004, 0.08, 1.15);
     });
@@ -52,6 +53,7 @@ export class CameraRig {
     addEventListener('pointercancel', () => (drag = null));
     dom.addEventListener('wheel', (e) => {
       e.preventDefault();
+      if (this.cab) return;
       this.distTarget = MathUtils.clamp(this.distTarget * Math.exp(e.deltaY * 0.0012), this.minDist, this.maxDist);
     }, { passive: false });
   }
@@ -61,8 +63,24 @@ export class CameraRig {
     this.update(0, true);
   }
 
+  // First-person view: a camera fixed on the cab roof, looking straight ahead.
+  toggleCab() {
+    this.cab = !this.cab;
+    this.camera.fov = this.cab ? 62 : 48;
+    this.camera.updateProjectionMatrix();
+    if (!this.cab) this.snap();
+    return this.cab;
+  }
+
   update(dt, snap = false) {
     const train = this.train, T = this.terrain;
+    if (this.cab) {
+      const loco = train.loco;
+      train.worldPoint(loco, [-1.7, 4.15, 0], this.camera.position);
+      this.camera.lookAt(train.worldPoint(loco, [40, 1.9, 0], this._p));
+      this.focus.copy(this.camera.position);
+      return;
+    }
     if (this.hold.rot) this.yawTarget += this.hold.rot * dt * 1.4;
     if (this.hold.zoom) this.distTarget = MathUtils.clamp(this.distTarget * Math.exp(-this.hold.zoom * dt * 1.3), this.minDist, this.maxDist);
 
