@@ -9,6 +9,7 @@ export class Hud {
     root.innerHTML = `
       <div class="lbl" id="lbl-stop">STOP</div>
       <div class="lbl" id="lbl-full">FULL</div>
+      <div class="lbl rev" id="lbl-rev">REV</div>
       <div class="lbl big" id="lbl-speed">0 km/h</div>
       <div class="lbl time" id="lbl-time">09:30</div>
       <div id="banner"><span></span></div>
@@ -17,11 +18,11 @@ export class Hud {
         <p><b>Drag the lever DOWN</b> to get steam up.<br/>Push it <b>UP</b> to brake and stop.</p>
         <p class="sub">Drag the little sun to set the time of day · a full day takes 4 minutes<br/>
         Drag the world to look around, scroll to zoom<br/>
-        Keys: W/S lever · Q/E rotate · +/- zoom · H whistle · V cab view · P pause time · M music · N sound</p>
+        Keys: W/S lever · Q/E rotate · +/- zoom · H whistle · L lamp · V cab view · P pause time · M music · N sound</p>
       </div>`;
     document.body.appendChild(root);
     this.el = {
-      stop: root.querySelector('#lbl-stop'), full: root.querySelector('#lbl-full'),
+      stop: root.querySelector('#lbl-stop'), full: root.querySelector('#lbl-full'), rev: root.querySelector('#lbl-rev'),
       speed: root.querySelector('#lbl-speed'), time: root.querySelector('#lbl-time'),
       banner: root.querySelector('#banner'), bannerText: root.querySelector('#banner span'),
       hint: root.querySelector('#hint'), title: root.querySelector('#title'),
@@ -39,12 +40,14 @@ export class Hud {
     this.root.style.setProperty('--u', a.u);
     this.place(this.el.stop, a.stop, -6 * a.u, 0);
     this.place(this.el.full, a.full, -6 * a.u, 0);
+    this.place(this.el.rev, a.rev, -6 * a.u, 0);
     this.place(this.el.speed, a.speed);
     this.place(this.el.time, a.time);
   }
 
   set(speedKmh, timeStr) {
-    const s = `${Math.round(speedKmh)} km/h`;
+    const sp = Math.round(Math.abs(speedKmh));
+    const s = speedKmh < -0.4 ? `R ${sp} km/h` : `${sp} km/h`;
     if (this.el.speed.textContent !== s) this.el.speed.textContent = s;
     if (this.el.time.textContent !== timeStr) this.el.time.textContent = timeStr;
   }

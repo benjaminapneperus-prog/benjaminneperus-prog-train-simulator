@@ -29,3 +29,5 @@ canvas { display: block; touch-action: none; }
   #hint { bottom: 42%; width: 82%; padding: 10px; } #hint p { font-size: 12px; } #hint p.sub { font-size: 9px; }
   #banner span { font-size: 13px; padding: 7px 12px; }
 }
+
+#hud .lbl.rev { color: #a9c8f0; }

@@ -47,7 +47,9 @@ export class Train {
     this.s = 0; // arc position of the loco origin
     this.v = 0;
     this.acc = 0;
-    this.lever = 0; // 0 = STOP (lever up) .. 1 = FULL (lever down)
+    this.lever = 0; // -0.5 = full reverse (lever right up) .. 0 = STOP .. 1 = FULL (lever down)
+    this.lampOn = false;
+    this.braking = false;
     this.leverSmoothed = 0;
     this.theta = 0; // driver crank angle
     this.distance = 0;
@@ -59,28 +61,38 @@ export class Train {
   }
 
   get speed() { return this.v; }
-  get targetSpeed() { return this.lever * VMAX; }
+  // Reverse is gentler: the lever's two reverse notches give up to 80% of VMAX backwards.
+  get targetSpeed() { return this.lever >= 0 ? this.lever * VMAX : this.lever * VMAX * 0.8; }
 
   update(dt) {
     const route = this.route;
     // Gradient resistance (weighty but gentle).
     const grade = (route.height(this.s + 3) - route.height(this.s - 3)) / 6;
     const target = this.targetSpeed;
+    const v = this.v;
+    const diff = target - v;
     let a;
-    if (this.v < target - 0.05) {
-      // steam builds up: stronger pull at low speed
-      a = 1.25 * (1 - (this.v / VMAX) * 0.55);
-    } else if (this.v > target + 0.05) {
-      // brakes: firmer when the lever is fully up
-      a = target === 0 ? -2.1 : -1.5;
-      if (this.v < 1.2 && target === 0) a = -1.4; // soft final stop
-    } else a = (target - this.v) * 2;
+    this.braking = false;
+    if (Math.abs(diff) < 0.05) a = diff * 2;
+    else if (v !== 0 && (Math.sign(v) !== Math.sign(target) || Math.abs(v) > Math.abs(target))) {
+      // brakes: firmer when the lever is at STOP, soft at the very end
+      let b = target === 0 ? 2.1 : 1.5;
+      if (target === 0 && Math.abs(v) < 1.2) b = 1.4;
+      a = -Math.sign(v) * b;
+      this.braking = true;
+    } else {
+      // steam builds up: stronger pull at low speed (either direction)
+      a = Math.sign(diff) * 1.25 * (1 - (Math.abs(v) / VMAX) * 0.55);
+    }
     a -= grade * 2.4;
-    if (target === 0 && this.v < 0.4) a = Math.min(a, -0.8);
     // smooth jerk
     this.acc += (a - this.acc) * Math.min(1, dt * 2.6);
-    this.v = Math.max(0, Math.min(VMAX * 1.08, this.v + this.acc * dt));
-    if (this.v === 0 && target === 0) this.acc = 0;
+    const prev = this.v;
+    this.v = Math.max(-VMAX * 1.08, Math.min(VMAX * 1.08, this.v + this.acc * dt));
+    // brakes bring the train to rest; they never push it the other way
+    if (this.braking && prev !== 0 && Math.sign(this.v) !== Math.sign(prev)) { this.v = 0; this.acc = 0; }
+    // parking brake at STOP
+    if (target === 0 && Math.abs(this.v) < 0.3) { this.v = 0; this.acc = 0; }
     const ds = this.v * dt;
     this.s = route.wrap(this.s + ds);
     this.distance += ds;

@@ -1,5 +1,8 @@
 // Procedural train audio (WebAudio) plus a looping background music track.
 import musicUrl from './firelight-and-frozen-glass.mp3';
+
+// Train sound level relative to the music: outside, and louder on the cab roof.
+const SFX_OUT = 1.9, SFX_CAB = 3.0;
 export class TrainAudio {
   constructor() {
     this.ctx = null;
@@ -31,6 +34,10 @@ export class TrainAudio {
     this.musicGain = ctx.createGain();
     this.musicGain.gain.value = 0;
     this.musicGain.connect(this.master);
+    // train sound effects share one bus so they can be raised in the cab view
+    this.sfx = ctx.createGain();
+    this.sfx.gain.value = this.cab ? SFX_CAB : SFX_OUT;
+    this.sfx.connect(this.master);
     this._startMusic();
     // shared noise buffer
     const len = ctx.sampleRate * 2;
@@ -49,7 +56,7 @@ export class TrainAudio {
     const lfog = ctx.createGain();
     lfog.gain.value = 60;
     lfo.connect(lfog).connect(sq.frequency);
-    sq.connect(sqg).connect(this.master);
+    sq.connect(sqg).connect(this.sfx);
     sq.start(); lfo.start();
     this.squeal = sqg;
     const started = () => this.onStart?.();
@@ -107,7 +114,7 @@ export class TrainAudio {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(gain, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(f).connect(g).connect(this.master);
+    src.connect(f).connect(g).connect(this.sfx);
     src.start(t, Math.random() * 1.5);
     src.stop(t + dur + 0.05);
   }
@@ -121,7 +128,7 @@ export class TrainAudio {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(gain, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g).connect(this.master);
+    o.connect(g).connect(this.sfx);
     o.start(t); o.stop(t + dur + 0.05);
   }
 
@@ -151,39 +158,41 @@ export class TrainAudio {
     this._tone(2093, 1.0, 0.05, 'sine', 0.36, 0.005);
   }
 
+  // A low, slightly mournful chime whistle: an A-minor chord, soft
+  // waveforms through a dark low-pass, slow swell and a sagging release.
   whistle(on) {
     if (!this.ctx) return;
     const ctx = this.ctx, t = ctx.currentTime;
     if (on && !this._whistle) {
       const out = ctx.createGain();
       out.gain.setValueAtTime(0.0001, t);
-      out.gain.exponentialRampToValueAtTime(0.22, t + 0.09);
+      out.gain.exponentialRampToValueAtTime(0.3, t + 0.22);
       const lp = ctx.createBiquadFilter();
-      lp.type = 'lowpass'; lp.frequency.value = 3200;
-      out.connect(lp).connect(this.master);
+      lp.type = 'lowpass'; lp.frequency.value = 1150; lp.Q.value = 0.9;
+      out.connect(lp).connect(this.sfx);
       const oscs = [];
-      for (const [f, gv] of [[523.25, 0.5], [659.25, 0.38], [783.99, 0.3], [1046.5, 0.08]]) {
+      for (const [f, gv, type] of [[110, 0.22, 'triangle'], [220, 0.55, 'sawtooth'], [261.63, 0.42, 'sawtooth'], [329.63, 0.32, 'triangle']]) {
         const o = ctx.createOscillator();
-        o.type = 'sawtooth';
-        o.frequency.setValueAtTime(f * 0.96, t);
-        o.frequency.exponentialRampToValueAtTime(f, t + 0.12);
+        o.type = type;
+        o.frequency.setValueAtTime(f * 0.97, t);
+        o.frequency.exponentialRampToValueAtTime(f, t + 0.35);
         const vib = ctx.createOscillator();
-        vib.frequency.value = 5.5;
+        vib.frequency.value = 4.2;
         const vg = ctx.createGain();
-        vg.gain.value = f * 0.004;
+        vg.gain.value = f * 0.003;
         vib.connect(vg).connect(o.frequency);
         const g = ctx.createGain();
-        g.gain.value = gv * 0.35;
+        g.gain.value = gv * 0.4;
         o.connect(g).connect(out);
         o.start(t); vib.start(t);
         oscs.push(o, vib);
       }
-      // breath
+      // a little breath of steam, kept low and dark
       const n = ctx.createBufferSource();
       n.buffer = this.noise; n.loop = true;
       const bp = ctx.createBiquadFilter();
-      bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 1.2;
-      const ng = ctx.createGain(); ng.gain.value = 0.03;
+      bp.type = 'bandpass'; bp.frequency.value = 900; bp.Q.value = 1.4;
+      const ng = ctx.createGain(); ng.gain.value = 0.02;
       n.connect(bp).connect(ng).connect(out);
       n.start(t);
       oscs.push(n);
@@ -192,13 +201,23 @@ export class TrainAudio {
       const w = this._whistle;
       w.out.gain.cancelScheduledValues(t);
       w.out.gain.setValueAtTime(w.out.gain.value, t);
-      w.out.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
-      for (const o of w.oscs) o.stop(t + 0.32);
+      w.out.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+      // the pitch sags as the steam dies away
+      for (const o of w.oscs) {
+        if (o.frequency && o.type !== 'sine') o.frequency.setTargetAtTime(o.frequency.value * 0.95, t, 0.25);
+        o.stop(t + 0.75);
+      }
       this._whistle = null;
     }
   }
 
-  toot(duration = 0.7) {
+  // Train sounds (not the music) get louder from the cab roof.
+  setCab(on) {
+    this.cab = on;
+    if (this.sfx) this.sfx.gain.setTargetAtTime(on ? SFX_CAB : SFX_OUT, this.ctx.currentTime, 0.2);
+  }
+
+  toot(duration = 0.9) {
     this.whistle(true);
     setTimeout(() => this.whistle(false), duration * 1000);
   }

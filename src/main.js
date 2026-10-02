@@ -12,6 +12,7 @@ import { buildVegetation } from './world/vegetation.js';
 import { buildSettlements } from './world/villages.js';
 import { STATIONS } from './world/layout.js';
 import { Train, VMAX, KMH } from './train/train.js';
+import { lampGlow } from './train/models.js';
 import { CameraRig } from './camera/cameraRig.js';
 import { DayCycle, formatTime } from './lighting/daycycle.js';
 import { Overlay } from './ui/overlay.js';
@@ -86,9 +87,18 @@ const overlay = new Overlay(renderer, {
   onTime: (h) => day.setHours(h),
   onWhistle: (on) => { whistling = on; audio.whistle(on); },
   onCab: () => toggleCab(),
+  onLamp: () => toggleLamp(),
 });
+function toggleLamp() {
+  train.lampOn = !train.lampOn;
+  overlay.lampOn = train.lampOn;
+  hud.banner(train.lampOn ? 'Headlamp on' : 'Headlamp off', 1.8);
+  audio.notch();
+  return train.lampOn;
+}
 function toggleCab() {
   const on = rig.toggleCab();
+  audio.setCab(on);
   overlay.cabOn = on;
   hud.banner(on ? 'Cab-roof view' : 'Outside view', 2);
   return on;
@@ -109,6 +119,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'Minus' || e.code === 'NumpadSubtract') { rig.zoom(-1); rig.setHold('zoom', -1); }
   if (e.code === 'KeyH' || e.code === 'Space') { whistling = true; audio.whistle(true); e.preventDefault(); }
   if (e.code === 'KeyV') toggleCab();
+  if (e.code === 'KeyL') toggleLamp();
   if (e.code === 'KeyP') { autoTime = !autoTime; hud.banner(autoTime ? 'Time is running' : 'Time paused', 2); }
   if (e.code === 'KeyN') { audio.setMuted(!audio.muted); hud.banner(audio.muted ? 'Sound off' : 'Sound on <em>♪</em>', 2); }
   if (e.code === 'KeyM') hud.banner(audio.toggleMusic() ? 'Music on <em>♪</em>' : 'Music off', 2);
@@ -191,7 +202,7 @@ function fx(dt) {
   const heading = train.heading(tmpH);
   const chim = train.worldPoint(loco, loco.userData.chimney, tmpP);
   const sp = train.v / VMAX;
-  const working = train.v < train.targetSpeed - 0.3 || (train.lever > 0 && train.v > 0.5);
+  const working = Math.abs(train.v) < Math.abs(train.targetSpeed) - 0.3 || (train.lever !== 0 && Math.abs(train.v) > 0.5);
   // chuffs: four per revolution of the drivers
   const phase = Math.floor(-train.theta / (Math.PI / 2));
   if (phase !== lastChuffPhase && train.v > 0.05) {
@@ -214,7 +225,7 @@ function fx(dt) {
   }
   // drain cocks: white jets from the cylinders when starting away
   drainT -= dt;
-  if (train.lever > 0 && train.v < 3.5 && drainT <= 0) {
+  if (train.lever !== 0 && Math.abs(train.v) < 3.5 && drainT <= 0) {
     drainT = 0.05;
     for (const c of loco.userData.cylinders) {
       const p = train.worldPoint(loco, c, new THREE.Vector3());
@@ -274,7 +285,10 @@ function step(dt) {
   bloom.strength = THREE.MathUtils.lerp(0.1, 0.45, day.night);
   towns.userData.poolMat.opacity = day.night * 0.8;
   if (towns.userData.sails) towns.userData.sails.rotation.z += dt * 0.45;
-  train.headlamp.intensity = 600 * Math.max(0.04, day.night);
+  // the headlamp is the driver's to switch on (L or the lamp button)
+  train.headlamp.intensity = train.lampOn ? 600 * Math.max(0.12, day.night) : 0;
+  lampGlow.emissiveIntensity = train.lampOn ? 6 * Math.max(0.45, day.night) : 0;
+  lampGlow.color.setHex(train.lampOn ? 0xfff1c9 : 0x8a8270);
   train.fireLight.intensity = (1.5 + 2.5 * day.night) * (0.75 + 0.25 * Math.sin(shared.uTime.value * 13) * Math.sin(shared.uTime.value * 7.1));
   // particle lighting follows the sun
   sunCol.copy(day.light.color).multiplyScalar(Math.min(1.1, 0.35 + day.light.intensity * 0.28));
@@ -288,7 +302,7 @@ function step(dt) {
   const alpine = Math.max(north, THREE.MathUtils.smoothstep(rig.focus.y, 55, 70));
   snow.update(dt, camera.position, alpine * 0.9, shCol.clone().lerp(new THREE.Color(1, 1, 1), 0.6));
   ambient.update(dt, camera, day);
-  audio.update(dt, { speed: train.v, vmax: VMAX, braking: train.acc < -0.8, idleSteam: train.v < 0.5 ? 1 : 0.3, alpine, night: day.night });
+  audio.update(dt, { speed: Math.abs(train.v), vmax: VMAX, braking: train.braking, idleSteam: Math.abs(train.v) < 0.5 ? 1 : 0.3, alpine, night: day.night });
   // UI
   const fwd = camera.getWorldDirection(tmpV);
   const camYaw = -(-Math.PI / 2 - Math.atan2(fwd.z, fwd.x));

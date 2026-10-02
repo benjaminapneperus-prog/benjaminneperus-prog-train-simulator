@@ -38,6 +38,7 @@ const ICONS = {
   rotR: ['..####..', '.#....#.', '#......#', '.......#', '...#...#', '..##..#.', '.#####..', '..##....'].reverse(),
   zoomIn: ['...##...', '...##...', '...##...', '########', '########', '...##...', '...##...', '...##...'],
   zoomOut: ['........', '........', '........', '########', '########', '........', '........', '........'],
+  lamp: ['..####..', '.#....#.', '#......#', '#......#', '.#....#.', '..####..', '...##...', '..####..'].reverse(),
   eye: ['........', '..####..', '.#....#.', '#..##..#', '#..##..#', '.#....#.', '..####..', '........'],
   whistle: ['...##...', '...##...', '..####..', '..#..#..', '..####..', '..#..#..', '..####..', '.######.'].reverse(),
   sound: ['...#.....', '..##..#..', '####...#.', '####.#.#.', '####.#.#.', '####...#.', '..##..#..', '...#.....'].reverse(),
@@ -69,12 +70,12 @@ function button(icon, size = 58, top = CREAM, side = WOOD) {
 }
 
 export class Overlay {
-  constructor(renderer, { onLever, onTime, onWhistle, onNotch, onCab }) {
+  constructor(renderer, { onLever, onTime, onWhistle, onNotch, onCab, onLamp }) {
     this.renderer = renderer;
     this.scene = new Scene();
     this.camera = new OrthographicCamera(0, 1, 1, 0, 1, 2000);
     this.camera.position.z = 800; // rays must start in front of every control
-    this.cb = { onLever, onTime, onWhistle, onNotch, onCab };
+    this.cb = { onLever, onTime, onWhistle, onNotch, onCab, onLamp };
     const key = new DirectionalLight(0xffffff, 2.1);
     key.position.set(-0.5, 0.8, 1);
     this.scene.add(key, new AmbientLight(0xffffff, 1.05));
@@ -93,104 +94,86 @@ export class Overlay {
   }
 
   // ------------------------------------------------------------- lever --
+  // Lever value: -0.5 (full reverse) .. 0 (STOP) .. 1 (FULL ahead).
+  angOf(v) { return this.ang0 - v * this.angK; }
+
   _buildLever() {
     const g = (this.leverGroup = new Group());
-    const W = 200, H = 340;
+    const W = 160, H = 270;
     const bb = new BoxBuilder();
-    plate(bb, W, H);
-    // pivot location & quadrant
-    this.pivot = new Vector3(56, -78, 0);
-    this.armLen = 122;
-    this.maxAng = MathUtils.degToRad(38);
+    // plain panel: iron frame around a wooden board
+    bb.box(-W / 2, -H / 2, -12, W / 2, H / 2, 0, IRON);
+    bb.box(-W / 2 + 5, -H / 2 + 5, -12, W / 2 - 5, H / 2 - 5, 3, WOOD);
+    this.pivot = new Vector3(44, -55, 0);
+    this.armLen = 80;
+    this.ang0 = MathUtils.degToRad(15);
+    this.angK = MathUtils.degToRad(60);
+    this.vMin = -0.5;
     const P = this.pivot;
-    // curved slot of the quadrant
-    for (let i = 0; i <= 26; i++) {
-      const a = -this.maxAng - 0.08 + (i / 26) * (this.maxAng * 2 + 0.16);
-      const r0 = this.armLen - 22, r1 = this.armLen + 2;
-      for (const r of [r0, r1]) {
-        const x = P.x - Math.cos(a) * r, y = P.y + Math.sin(a) * r;
-        bb.box(x - 5, y - 5, 3, x + 5, y + 5, 12, IRON_L);
-      }
-      const xm = P.x - Math.cos(a) * (this.armLen - 10), ym = P.y + Math.sin(a) * (this.armLen - 10);
-      bb.box(xm - 5, ym - 5, 3, xm + 5, ym + 5, 5, 0x1e1f21);
+    // the quadrant slot
+    const aTop = this.angOf(this.vMin) + 0.06, aBot = this.angOf(1) - 0.06;
+    for (let i = 0; i <= 22; i++) {
+      const a = aBot + (i / 22) * (aTop - aBot);
+      const x = P.x - Math.cos(a) * 70, y = P.y + Math.sin(a) * 70;
+      bb.box(x - 6, y - 6, 3, x + 6, y + 6, 6, 0x2a2c2e);
     }
-    // notches (detents) with coloured markers
-    this.notches = [0, 0.25, 0.5, 0.75, 1];
-    const notchCols = [RED, 0xe08a3a, 0xf2c64b, 0x9ccf4a, 0x4caf50];
+    // detent ticks: blue reverse, red stop, then forward
+    this.notches = [-0.5, -0.25, 0, 0.25, 0.5, 0.75, 1];
+    const cols = [0x4a7fc0, 0x6f9bd0, RED, 0xe08a3a, 0xf2c64b, 0x9ccf4a, 0x4caf50];
     this.notches.forEach((v, i) => {
-      const a = this.maxAng - v * this.maxAng * 2;
-      const r = this.armLen + 12;
-      const x = P.x - Math.cos(a) * r, y = P.y + Math.sin(a) * r;
-      bb.box(x - 7, y - 4, 3, x + 7, y + 4, 14, BRASS_D);
-      const r2 = this.armLen + 26;
-      const x2 = P.x - Math.cos(a) * r2, y2 = P.y + Math.sin(a) * r2;
-      bb.box(x2 - 5, y2 - 5, 3, x2 + 5, y2 + 5, 11, notchCols[i]);
+      const a = this.angOf(v);
+      const x = P.x - Math.cos(a) * 82, y = P.y + Math.sin(a) * 82;
+      bb.box(x - 4, y - 4, 3, x + 4, y + 4, 9, cols[i]);
     });
-    // pivot boss
-    bb.box(P.x - 16, P.y - 16, 3, P.x + 16, P.y + 16, 16, IRON_L);
-    bb.box(P.x - 9, P.y - 9, 16, P.x + 9, P.y + 9, 22, BRASS);
+    bb.box(P.x - 11, P.y - 11, 3, P.x + 11, P.y + 11, 14, IRON_L);
     g.add(meshOf(bb));
 
-    // the arm itself (rotates around the pivot)
+    // the arm: a plain bar with a round red knob
     const arm = (this.arm = new Group());
     arm.position.copy(P);
     const ab = new BoxBuilder();
-    ab.box(-this.armLen, -8, 14, 10, 8, 26, 0x8f969c);
-    ab.box(-this.armLen, -8, 26, 10, 8, 28, 0xb8bec4);
-    ab.box(-this.armLen + 20, -10, 16, -this.armLen + 80, 10, 30, BRASS_D);
-    ab.box(-this.armLen + 22, 4, 30, -this.armLen + 78, 8, 31, BRASS);
-    // spring latch
-    ab.box(-this.armLen + 4, -14, 18, -this.armLen + 16, 14, 32, IRON_L);
-    // handle grip + red knob
     const L = this.armLen;
-    ab.box(-L - 34, -11, 10, -L + 2, 11, 32, WOOD_L);
-    ab.box(-L - 34, -11, 32, -L + 2, 11, 34, 0xc48a5a);
-    for (let x = -L - 30; x < -L; x += 8) ab.box(x, -12, 12, x + 2, 12, 33, WOOD_D);
-    const k = -L - 50;
-    ab.box(k - 15, -15, 6, k + 15, 15, 38, RED);
-    ab.box(k - 19, -10, 10, k + 19, 10, 34, RED);
-    ab.box(k - 10, -19, 10, k + 10, 19, 34, RED);
-    ab.box(k - 10, -10, 38, k + 10, 10, 41, 0xd9473a);
-    ab.box(k - 8, 5, 40, k, 12, 43, 0xff9a8a);
+    ab.box(-L, -5, 12, 6, 5, 20, 0x9aa0a5);
+    const k = -L - 12;
+    ab.box(k - 11, -11, 8, k + 11, 11, 30, RED);
+    ab.box(k - 14, -7, 11, k + 14, 7, 27, RED);
+    ab.box(k - 7, -14, 11, k + 7, 14, 27, RED);
+    ab.box(k - 6, 3, 30, k, 8, 32, 0xff9a8a);
     arm.add(meshOf(ab));
-    const armHit = new Mesh(new PlaneGeometry(L + 80, 64), hitMat);
-    armHit.position.set(-(L + 80) / 2 + 10, 0, 44);
+    const armHit = new Mesh(new PlaneGeometry(L + 40, 44), hitMat);
+    armHit.position.set(-(L + 40) / 2 + 6, 0, 40);
     arm.add(armHit);
     g.add(arm);
     this.armHit = armHit;
 
-    // speed dial at the top
+    // small, simple speed dial
     const dial = new BoxBuilder();
-    const D = new Vector3(22, 118, 0);
+    const D = new Vector3(48, 100, 0);
     this.dialCenter = D;
-    for (let i = 0; i < 28; i++) {
-      const a = (i / 28) * Math.PI * 2;
-      const x = D.x + Math.cos(a) * 38, y = D.y + Math.sin(a) * 38;
-      dial.box(x - 6, y - 6, 3, x + 6, y + 6, 14, BRASS);
+    for (let i = 0; i < 18; i++) {
+      const a = (i / 18) * Math.PI * 2;
+      const x = D.x + Math.cos(a) * 22, y = D.y + Math.sin(a) * 22;
+      dial.box(x - 4, y - 4, 3, x + 4, y + 4, 9, BRASS);
     }
-    dial.box(D.x - 30, D.y - 22, 3, D.x + 30, D.y + 22, 10, CREAM);
-    dial.box(D.x - 22, D.y - 30, 3, D.x + 22, D.y + 30, 10, CREAM);
-    for (let i = 0; i <= 8; i++) {
-      const a = MathUtils.degToRad(210 - i * 30);
-      const x = D.x + Math.cos(a) * 25, y = D.y + Math.sin(a) * 25;
-      dial.box(x - 2.5, y - 2.5, 10, x + 2.5, y + 2.5, 12, i > 6 ? RED : INK);
-    }
+    dial.box(D.x - 18, D.y - 13, 3, D.x + 18, D.y + 13, 8, CREAM);
+    dial.box(D.x - 13, D.y - 18, 3, D.x + 13, D.y + 18, 8, CREAM);
     g.add(meshOf(dial));
     const needle = (this.needle = new Group());
-    needle.position.set(D.x, D.y, 12);
+    needle.position.set(D.x, D.y, 9);
     const nb = new BoxBuilder();
-    nb.box(-2, -2, 0, 24, 2, 3, RED);
-    nb.box(-5, -5, 0, 5, 5, 5, IRON);
+    nb.box(-1.5, -1.5, 0, 14, 1.5, 2, RED);
+    nb.box(-3, -3, 0, 3, 3, 3, IRON);
     needle.add(meshOf(nb));
     g.add(needle);
 
-    // whistle button (top-left corner of the lever panel)
-    this.whistleBtn = button('whistle', 46, 0xf6d98a, BRASS_D);
-    this.whistleBtn.position.set(-60, 128, 6);
-    g.add(this.whistleBtn);
-    this.cabBtn = button('eye', 40);
-    this.cabBtn.position.set(-64, 72, 6);
-    g.add(this.cabBtn);
+    // three small buttons: whistle, headlamp, cab view
+    this.whistleBtn = button('whistle', 28, 0xf6d98a, BRASS_D);
+    this.lampBtn = button('lamp', 28);
+    this.cabBtn = button('eye', 28);
+    [this.whistleBtn, this.lampBtn, this.cabBtn].forEach((b, i) => {
+      b.position.set(-56 + i * 34, 104, 4);
+      g.add(b);
+    });
 
     this.leverSize = { W, H };
     this.scene.add(g);
@@ -314,12 +297,12 @@ export class Overlay {
     this.scene.updateMatrixWorld();
     const L = this.leverGroup, Cg = this.consoleGroup, P = this.pivot;
     const lab = (v) => {
-      const a = this.maxAng - v * this.maxAng * 2, r = this.armLen + 44;
+      const a = this.angOf(v), r = 106;
       return proj(L, new Vector3(P.x - Math.cos(a) * r, P.y + Math.sin(a) * r, 14));
     };
     return {
-      stop: lab(0), full: lab(1),
-      speed: proj(L, new Vector3(this.dialCenter.x + 14, this.dialCenter.y - 56, 14)),
+      stop: lab(0), full: lab(1), rev: lab(-0.4),
+      speed: proj(L, new Vector3(this.dialCenter.x - 6, this.dialCenter.y - 36, 14)),
       time: proj(Cg, new Vector3(0, this.plateY, 17)),
       u: this.u,
     };
@@ -329,11 +312,12 @@ export class Overlay {
   debugPoints() {
     this.scene.updateMatrixWorld();
     const sp = (obj, v = new Vector3()) => { const p = v.applyMatrix4(obj.matrixWorld); return { x: p.x, y: this.H - p.y }; };
-    const knob = sp(this.arm, new Vector3(-this.armLen - 50, 0, 40));
+    const knob = sp(this.arm, new Vector3(-this.armLen - 12, 0, 30));
     const out = { knob, sun: sp(this.sun, new Vector3(0, 0, 20)) };
     for (const [k, b] of Object.entries(this.btns)) out[k] = sp(b, new Vector3(0, 0, 20));
     out.whistle = sp(this.whistleBtn, new Vector3(0, 0, 20));
     out.cab = sp(this.cabBtn, new Vector3(0, 0, 20));
+    out.lamp = sp(this.lampBtn, new Vector3(0, 0, 20));
     out.arc = (hours) => null;
     return out;
   }
@@ -362,12 +346,13 @@ export class Overlay {
 
   _bind(dom) {
     const buttons = () => [
-      this.whistleBtn.userData.hit, this.cabBtn.userData.hit,
+      this.whistleBtn.userData.hit, this.lampBtn.userData.hit, this.cabBtn.userData.hit,
     ];
     const plates = () => [this.leverGroup.children[0], this.consoleGroup.children[0]];
     const findBtn = (hit) => {
       if (this.whistleBtn.userData.hit === hit) return ['whistle', this.whistleBtn];
       if (this.cabBtn.userData.hit === hit) return ['cab', this.cabBtn];
+      if (this.lampBtn.userData.hit === hit) return ['lamp', this.lampBtn];
       return null;
     };
     addEventListener('pointerdown', (e) => {
@@ -391,6 +376,7 @@ export class Overlay {
           this.drag = { kind: 'button', key: k, btn: b, id: e.pointerId, t0: performance.now() };
           if (k === 'whistle') this.cb.onWhistle(true);
           if (k === 'cab') this.cabOn = this.cb.onCab();
+          if (k === 'lamp') this.lampOn = this.cb.onLamp();
         } else this.drag = { kind: 'plate', id: e.pointerId };
       }
     }, { capture: true });
@@ -422,21 +408,20 @@ export class Overlay {
   _nearQuadrant(e) {
     const p = this._localOn(e, this.leverGroup, 14);
     const d = Math.hypot(p.x - this.pivot.x, p.y - this.pivot.y);
-    return d > this.armLen - 40 && p.x < this.pivot.x;
+    return d > 45 && d < 120 && p.x < this.pivot.x;
   }
 
   _dragLever(e) {
     const p = this._localOn(e, this.leverGroup, 14);
     const P = this.pivot;
-    let a = Math.atan2(p.y - P.y, -(p.x - P.x));
-    a = MathUtils.clamp(a, -this.maxAng, this.maxAng);
-    let v = (this.maxAng - a) / (2 * this.maxAng);
+    const a = Math.atan2(p.y - P.y, -(p.x - P.x));
+    let v = MathUtils.clamp((this.ang0 - a) / this.angK, this.vMin, 1);
     for (const n of this.notches) if (Math.abs(v - n) < 0.035) v = n;
     this.setLever(v, true);
   }
 
   setLever(v, fromUser = false) {
-    v = MathUtils.clamp(v, 0, 1);
+    v = MathUtils.clamp(v, this.vMin, 1);
     const prev = this.lever;
     for (const n of this.notches) {
       if ((prev < n && v >= n) || (prev > n && v <= n)) this.cb.onNotch?.(n);
@@ -455,11 +440,11 @@ export class Overlay {
     this.hours = hours;
     // lever arm eases toward the set value (feels mechanical)
     this.leverVis += (this.lever - this.leverVis) * (1 - Math.exp(-dt * 14));
-    const a = this.maxAng - this.leverVis * this.maxAng * 2;
+    const a = this.angOf(this.leverVis);
     this.arm.rotation.z = -a;
     // needle
     this.speedFrac += (speedFrac - this.speedFrac) * (1 - Math.exp(-dt * 6));
-    this.needle.rotation.z = MathUtils.degToRad(210 - this.speedFrac * 240);
+    this.needle.rotation.z = MathUtils.degToRad(210 - Math.abs(this.speedFrac) * 240);
     // sun on its arc
     const th = arcAngle(hours);
     this.sun.position.set(this.arcC.x + Math.cos(th) * this.arcR, this.arcC.y + Math.sin(th) * this.arcR, 14);
@@ -471,8 +456,9 @@ export class Overlay {
     // compass: north (-z) relative to the camera's view
     this.compass.rotation.z = cameraYaw;
     // buttons
-    const btnList = [this.whistleBtn, this.cabBtn];
+    const btnList = [this.whistleBtn, this.lampBtn, this.cabBtn];
     this.cabBtn.userData.latched = this.cabOn;
+    this.lampBtn.userData.latched = this.lampOn;
     for (const b of btnList) {
       const ud = b.userData;
       ud.depth = (ud.depth ?? 0) + ((ud.pressed ? -9 : ud.latched ? -6 : 0) - (ud.depth ?? 0)) * (1 - Math.exp(-dt * 30));
