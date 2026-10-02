@@ -156,7 +156,7 @@ export class DayCycle {
 
   setHours(h) { this.hours = clamp(h, T_MIN, T_MAX); }
 
-  update(dt, camera, focus) {
+  update(dt, camera, focus, viewDist = 30) {
     const h = this.hours;
     const sun = sunDirection(h, this.sunDir);
     const e = Math.asin(sun.y);
@@ -210,8 +210,12 @@ export class DayCycle {
     const fog = this.scene.fog;
     fog.color.copy(U.uHorizon.value).lerp(U.uZenith.value, 0.12);
     const haze = smoothstep(0.35, 0.0, Math.abs(e)) * (0.6 + 0.4 * morning);
-    fog.near = MathUtils.lerp(200, 90, haze) * MathUtils.lerp(1, 0.8, this.night);
-    fog.far = MathUtils.lerp(1000, 700, haze) * MathUtils.lerp(1, 0.75, this.night);
+    // push the fog back when the camera is pulled far out
+    const far = Math.max(0, viewDist - 40);
+    fog.near = MathUtils.lerp(200, 90, haze) * MathUtils.lerp(1, 0.8, this.night) + far * 0.9;
+    fog.far = MathUtils.lerp(1000, 700, haze) * MathUtils.lerp(1, 0.75, this.night) + far * 1.4;
+    // shadows cover more ground (at lower detail) in wide views
+    this.shadowRadius = MathUtils.clamp(130 + viewDist * 1.3, 170, 560);
 
     // Exposure: keep the night readable.
     this.renderer.toneMappingExposure = MathUtils.lerp(1.0, 1.35, this.night) + 0.08 * haze;

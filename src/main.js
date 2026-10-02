@@ -4,7 +4,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { getTerrain } from './world/terrain.js';
-import { buildTerrainMesh, buildWaterMesh } from './world/terrainMesh.js';
+import { buildTerrainMesh, buildWaterMesh, buildOuterLand } from './world/terrainMesh.js';
 import { buildTrack } from './world/trackMesh.js';
 import { buildStructures } from './world/structures.js';
 import { shared, updateGlow } from './world/materials.js';
@@ -41,6 +41,7 @@ const T = getTerrain();
 const route = T.route;
 scene.add(buildTerrainMesh(T));
 scene.add(buildWaterMesh(T));
+scene.add(buildOuterLand());
 scene.add(buildTrack(route, T));
 scene.add(buildStructures(route, T));
 const towns = buildSettlements(T, route);
@@ -262,7 +263,7 @@ function step(dt) {
   shared.uTime.value += dt;
   train.update(dt);
   rig.update(dt);
-  day.update(dt, camera, rig.focus);
+  day.update(dt, camera, rig.focus, rig.dist);
   updateGlow(day.night);
   // bloom only for lamps/windows: very high threshold by day so sunlit snow never glows
   bloom.threshold = THREE.MathUtils.lerp(4.5, 1.9, day.night);

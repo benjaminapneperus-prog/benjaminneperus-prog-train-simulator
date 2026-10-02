@@ -202,3 +202,34 @@ export function buildWaterMesh(T) {
   mesh.renderOrder = 2;
   return mesh;
 }
+
+// Low plains beyond the edge of the diorama, so wide views fade into haze
+// instead of ending in a void. Sits just below every terrain column.
+export function buildOuterLand() {
+  const S = 5200, seg = 80;
+  const pos = [], nor = [], col = [], idx = [];
+  const snow = lin(0xe6ecf3), grass = lin(0x6a9440), forest = lin(0x4f7a34);
+  for (let j = 0; j <= seg; j++) for (let i = 0; i <= seg; i++) {
+    const x = -S / 2 + (i / seg) * S, z = -S / 2 + (j / seg) * S;
+    pos.push(x, 1.4, z);
+    nor.push(0, 1, 0);
+    const t = Math.min(1, Math.max(0, (z + 120) / 220)); // 0 north .. 1 south
+    const f = (Math.sin(x * 0.004) * Math.cos(z * 0.005) + 1) / 2;
+    const g = [grass[0] + (forest[0] - grass[0]) * f, grass[1] + (forest[1] - grass[1]) * f, grass[2] + (forest[2] - grass[2]) * f];
+    col.push(snow[0] + (g[0] - snow[0]) * t, snow[1] + (g[1] - snow[1]) * t, snow[2] + (g[2] - snow[2]) * t);
+  }
+  for (let j = 0; j < seg; j++) for (let i = 0; i < seg; i++) {
+    const a = j * (seg + 1) + i, b = a + 1, c = a + seg + 1, d = c + 1;
+    idx.push(a, c, b, b, c, d);
+  }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new Float32BufferAttribute(nor, 3));
+  g.setAttribute('color', new Float32BufferAttribute(col, 3));
+  g.setIndex(new Uint32BufferAttribute(idx, 1));
+  g.computeBoundingSphere();
+  const mesh = new Mesh(g, voxelMaterial({ cell: 8, edge: 0, jitter: 0.08, strata: 0 }));
+  mesh.receiveShadow = true;
+  mesh.name = 'outer-land';
+  return mesh;
+}

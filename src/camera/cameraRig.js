@@ -19,7 +19,7 @@ export class CameraRig {
     this.dist = 27;
     this.distTarget = this.dist;
     this.minDist = 8;
-    this.maxDist = 85;
+    this.maxDist = 340; // far enough to take in the whole mountain and loop
     this.heading = null;
     this.focus = new Vector3();
     this.lift = 0;
@@ -86,7 +86,7 @@ export class CameraRig {
 
     // Camera position on the orbit sphere.
     const ang = this.heading + Math.PI + this.yaw; // behind the train, then yaw offset
-    const pitch = this.pitch + MathUtils.clamp((14 - this.dist) * 0.02, 0, 0.18);
+    const pitch = this.pitch + MathUtils.clamp((14 - this.dist) * 0.02, 0, 0.18) + 0.32 * MathUtils.smoothstep(this.dist, 90, 300);
     const cp = Math.cos(pitch), sp = Math.sin(pitch);
     const cam = this._v.set(
       this.focus.x + Math.cos(ang) * cp * this.dist,
