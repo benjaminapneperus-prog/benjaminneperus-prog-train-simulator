@@ -30,10 +30,7 @@ export class TrainAudio {
     const d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     this.noise = buf;
-    // continuous beds: steam hiss, wind, brake squeal
-    this.hiss = this._loopNoise('bandpass', 3800, 0.6, 0);
-    this.wind = this._loopNoise('lowpass', 420, 0.4, 0);
-    this.roll = this._loopNoise('lowpass', 180, 0.8, 0);
+    // brake squeal (a quiet tone, only while braking at low speed)
     const sq = ctx.createOscillator();
     sq.type = 'triangle';
     sq.frequency.value = 2100;
@@ -52,21 +49,6 @@ export class TrainAudio {
     else ctx.resume().then(started).catch(() => {});
   }
 
-  _loopNoise(type, freq, q, gain) {
-    const ctx = this.ctx;
-    const src = ctx.createBufferSource();
-    src.buffer = this.noise;
-    src.loop = true;
-    const f = ctx.createBiquadFilter();
-    f.type = type;
-    f.frequency.value = freq;
-    f.Q.value = q;
-    const g = ctx.createGain();
-    g.gain.value = gain;
-    src.connect(f).connect(g).connect(this.master);
-    src.start();
-    return { g, f };
-  }
 
   setMuted(m) {
     this.muted = m;
@@ -163,7 +145,7 @@ export class TrainAudio {
       n.buffer = this.noise; n.loop = true;
       const bp = ctx.createBiquadFilter();
       bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 1.2;
-      const ng = ctx.createGain(); ng.gain.value = 0.12;
+      const ng = ctx.createGain(); ng.gain.value = 0.03;
       n.connect(bp).connect(ng).connect(out);
       n.start(t);
       oscs.push(n);
@@ -187,11 +169,6 @@ export class TrainAudio {
   update(dt, { speed, vmax, braking, idleSteam, alpine, night }) {
     if (!this.ready) return;
     const t = this.ctx.currentTime;
-    const sp = speed / vmax;
-    this.hiss.g.gain.setTargetAtTime(0.02 + idleSteam * 0.07, t, 0.2);
-    this.roll.g.gain.setTargetAtTime(0.14 * Math.min(1, sp * 1.4), t, 0.2);
-    this.roll.f.frequency.setTargetAtTime(120 + sp * 260, t, 0.3);
-    this.wind.g.gain.setTargetAtTime(0.03 + alpine * 0.06 + sp * 0.03, t, 0.5);
     this.squeal.gain.setTargetAtTime(braking && speed > 1.2 && speed < 9 ? 0.012 * Math.min(1, speed / 4) : 0, t, 0.08);
     // birdsong in the green valley by day
     if (!alpine && night < 0.5 && Math.random() < dt * 0.35) {

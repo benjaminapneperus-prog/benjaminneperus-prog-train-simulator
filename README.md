@@ -66,8 +66,8 @@ little reward. There is no score to chase — the point is the ride.
 - **Atmosphere.** Steam puffs synchronised with the driving wheels, drain
   cock jets when starting, safety-valve feathering at stations, chimney
   smoke in the villages, snowfall on the alpine side, drifting voxel clouds
-  and birds, and procedural WebAudio for chuffs, rail joints, whistle, hiss
-  and brakes.
+  and birds, and procedural WebAudio for chuffs, rail joints, whistle, brakes and
+  birdsong.
 
 ## Hosting
 
