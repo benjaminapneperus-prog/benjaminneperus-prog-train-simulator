@@ -187,6 +187,30 @@ export class TrainAudio {
         o.start(t); vib.start(t);
         oscs.push(o, vib);
       }
+      // second tone: the original brighter chime (C major) layered on top,
+      // a little softer so the whistle stays dark and mournful
+      const out2 = ctx.createGain();
+      out2.gain.setValueAtTime(0.0001, t);
+      out2.gain.exponentialRampToValueAtTime(0.16, t + 0.12);
+      const lp2 = ctx.createBiquadFilter();
+      lp2.type = 'lowpass'; lp2.frequency.value = 3000;
+      out2.connect(lp2).connect(this.sfx);
+      for (const [f, gv] of [[523.25, 0.5], [659.25, 0.38], [783.99, 0.3]]) {
+        const o = ctx.createOscillator();
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(f * 0.96, t);
+        o.frequency.exponentialRampToValueAtTime(f, t + 0.12);
+        const vib = ctx.createOscillator();
+        vib.frequency.value = 5.5;
+        const vg = ctx.createGain();
+        vg.gain.value = f * 0.004;
+        vib.connect(vg).connect(o.frequency);
+        const g = ctx.createGain();
+        g.gain.value = gv * 0.35;
+        o.connect(g).connect(out2);
+        o.start(t); vib.start(t);
+        oscs.push(o, vib);
+      }
       // a little breath of steam, kept low and dark
       const n = ctx.createBufferSource();
       n.buffer = this.noise; n.loop = true;
@@ -196,12 +220,15 @@ export class TrainAudio {
       n.connect(bp).connect(ng).connect(out);
       n.start(t);
       oscs.push(n);
-      this._whistle = { out, oscs };
+      this._whistle = { out, out2, oscs };
     } else if (!on && this._whistle) {
       const w = this._whistle;
       w.out.gain.cancelScheduledValues(t);
       w.out.gain.setValueAtTime(w.out.gain.value, t);
       w.out.gain.exponentialRampToValueAtTime(0.0001, t + 0.7);
+      w.out2.gain.cancelScheduledValues(t);
+      w.out2.gain.setValueAtTime(w.out2.gain.value, t);
+      w.out2.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
       // the pitch sags as the steam dies away
       for (const o of w.oscs) {
         if (o.frequency && o.type !== 'sine') o.frequency.setTargetAtTime(o.frequency.value * 0.95, t, 0.25);
