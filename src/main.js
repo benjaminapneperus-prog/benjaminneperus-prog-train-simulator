@@ -110,6 +110,7 @@ let autoTime = !params.has('t');
 let whistling = false;
 let whistlePuff = 0;
 const keys = {};
+let stopLatch = false;
 addEventListener('keydown', (e) => {
   if (keys[e.code]) return;
   keys[e.code] = true;
@@ -272,8 +273,17 @@ function fx(dt) {
 let last = performance.now();
 const sunCol = new THREE.Color(), shCol = new THREE.Color();
 function step(dt) {
-  if (keys.KeyS || keys.ArrowDown) { overlay.setLever(overlay.lever + dt * 0.55); train.lever = overlay.lever; hud.hideHint(); }
-  if (keys.KeyW || keys.ArrowUp) { overlay.setLever(overlay.lever - dt * 0.55); train.lever = overlay.lever; }
+  const keyDir = (keys.KeyS || keys.ArrowDown ? 1 : 0) - (keys.KeyW || keys.ArrowUp ? 1 : 0);
+  if (keyDir) {
+    const prev = overlay.lever;
+    let v = prev + keyDir * dt * 0.55;
+    // the lever catches at STOP; press again to carry on through it
+    if (!stopLatch && prev !== 0 && Math.sign(v) !== Math.sign(prev)) { v = 0; stopLatch = true; }
+    if (stopLatch) v = 0;
+    overlay.setLever(v);
+    train.lever = overlay.lever;
+    hud.hideHint();
+  } else stopLatch = false;
   shared.uTime.value += dt;
   if (autoTime && overlay.drag?.kind !== 'sun') day.setHours(day.hours + (dt * 24) / DAY_SECONDS);
   train.update(dt);

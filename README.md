@@ -24,7 +24,7 @@ npm run preview
 
 | Control | Action |
 | --- | --- |
-| **Lever** (bottom right) | drag **down** to open the regulator and gather speed; drag **up** to brake and stop. Two notches above STOP are **reverse** (REV). The three small buttons above it blow the whistle, switch the headlamp on/off, and toggle a fixed first-person view from the cab roof (train sounds are louder there) |
+| **Driver's stand** (bottom right) | a speed gauge, three buttons with state lamps (whistle, headlamp, cab-roof view) and the regulator handle in a straight notched gate: drag it **down** for more speed, **up** to brake; it catches firmly at STOP (0 km/h), and the two blue notches above STOP are **reverse** |
 | **Day dial** (bottom left) | time runs by itself — one in-game day lasts four minutes. Drag the little sun round the dial to jump to any time: the upper half is the day from sunrise in the east to sunset in the west, the lower half is the night, when it becomes the moon |
 | Mouse / touch | drag on the world to orbit the camera, wheel to zoom |
 | Keyboard | `S`/`↓` lever down · `W`/`↑` lever up · `Q`/`E` rotate · `+`/`-` zoom · `H`/`Space` whistle · `L` headlamp · `V` cab-roof view · `P` pause/resume time · `[` `]` nudge time · `M` music on/off · `N` all sound on/off |
