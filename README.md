@@ -8,8 +8,8 @@ horseshoe into warm pine forests, through the rural village of Meadowbrook
 and back up the western shoulder to the alpine village of Frostpeak.
 
 Built with [three.js](https://threejs.org) and [Vite](https://vite.dev).
-No external art or audio assets: every model, texture-like detail and sound
-is generated in code.
+Every model, texture-like detail and sound effect is generated in code; the
+only external asset is the background music track.
 
 ## Run it
 
@@ -28,7 +28,7 @@ npm run preview
 | **Mini sun** (bottom left) | drag it along its arc to set the time of day, from sunrise in the east through midday, golden hour and sunset to night; below the horizon it becomes the moon |
 | **Camera buttons** | rotate left / right around the train, zoom in / out (tap for a step, hold to keep going) |
 | Mouse / touch | drag on the world to orbit, wheel to zoom |
-| Keyboard | `S`/`↓` lever down · `W`/`↑` lever up · `Q`/`E` rotate · `+`/`-` zoom · `H`/`Space` whistle · `[` `]` time of day |
+| Keyboard | `S`/`↓` lever down · `W`/`↑` lever up · `Q`/`E` rotate · `+`/`-` zoom · `H`/`Space` whistle · `M` music on/off · `[` `]` time of day |
 
 Stop the locomotive beside the red **STOP** board at either station for a
 little reward. There is no score to chase — the point is the ride.
@@ -66,8 +66,9 @@ little reward. There is no score to chase — the point is the ride.
 - **Atmosphere.** Steam puffs synchronised with the driving wheels, drain
   cock jets when starting, safety-valve feathering at stations, chimney
   smoke in the villages, snowfall on the alpine side, drifting voxel clouds
-  and birds, and procedural WebAudio for chuffs, rail joints, whistle, brakes and
-  birdsong.
+  and birds, procedural WebAudio for chuffs, rail joints, whistle, brakes and
+  birdsong, and a looping background track, *Firelight and Frozen Glass*
+  (`M` toggles it).
 
 ## Hosting
 

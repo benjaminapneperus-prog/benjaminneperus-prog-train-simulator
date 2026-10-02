@@ -109,6 +109,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'Equal' || e.code === 'NumpadAdd') { rig.zoom(1); rig.setHold('zoom', 1); }
   if (e.code === 'Minus' || e.code === 'NumpadSubtract') { rig.zoom(-1); rig.setHold('zoom', -1); }
   if (e.code === 'KeyH' || e.code === 'Space') { whistling = true; audio.whistle(true); e.preventDefault(); }
+  if (e.code === 'KeyM') hud.banner(audio.toggleMusic() ? 'Music on <em>♪</em>' : 'Music off', 2);
   if (e.code === 'BracketLeft') day.setHours(day.hours - 0.25);
   if (e.code === 'BracketRight') day.setHours(day.hours + 0.25);
 });

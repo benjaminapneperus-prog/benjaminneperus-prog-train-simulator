@@ -1,8 +1,11 @@
-// Procedural train audio (WebAudio, no samples).
+// Procedural train audio (WebAudio) plus a looping background music track.
+import musicUrl from './firelight-and-frozen-glass.mp3';
 export class TrainAudio {
   constructor() {
     this.ctx = null;
     this.muted = false;
+    this.musicOn = true;
+    this.musicLoaded = false;
     this._whistle = null;
     const unlock = () => this._init();
     // Capture phase, so clicks on the voxel controls (which stop propagation)
@@ -24,6 +27,11 @@ export class TrainAudio {
     comp.threshold.value = -16;
     comp.ratio.value = 3;
     this.master.connect(comp).connect(ctx.destination);
+    // background music has its own gain so it can be toggled separately
+    this.musicGain = ctx.createGain();
+    this.musicGain.gain.value = 0;
+    this.musicGain.connect(this.master);
+    this._startMusic();
     // shared noise buffer
     const len = ctx.sampleRate * 2;
     const buf = ctx.createBuffer(1, len, ctx.sampleRate);
@@ -49,6 +57,36 @@ export class TrainAudio {
     else ctx.resume().then(started).catch(() => {});
   }
 
+
+  async _startMusic() {
+    try {
+      const res = await fetch(musicUrl);
+      const buf = await this.ctx.decodeAudioData(await res.arrayBuffer());
+      const src = this.ctx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      src.connect(this.musicGain);
+      src.start();
+      this.musicLoaded = true;
+      this._applyMusic(3);
+    } catch (e) {
+      console.warn('Background music could not be loaded', e);
+    }
+  }
+
+  _applyMusic(fade = 0.6) {
+    if (!this.musicGain) return;
+    const t = this.ctx.currentTime;
+    this.musicGain.gain.cancelScheduledValues(t);
+    this.musicGain.gain.setValueAtTime(this.musicGain.gain.value, t);
+    this.musicGain.gain.linearRampToValueAtTime(this.musicOn && this.musicLoaded ? 0.42 : 0, t + fade);
+  }
+
+  toggleMusic() {
+    this.musicOn = !this.musicOn;
+    this._applyMusic();
+    return this.musicOn;
+  }
 
   setMuted(m) {
     this.muted = m;
