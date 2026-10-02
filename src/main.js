@@ -80,24 +80,16 @@ if (LOW) day.light.shadow.mapSize.set(1024, 1024);
 composer.addPass(new OutputPass());
 
 // --------------------------------------------------------------- controls
-let holdTimer = null;
 const overlay = new Overlay(renderer, {
   onLever: (v) => { train.lever = v; hud.hideHint(); },
   onNotch: () => audio.notch(),
-  onRotate: (dir, down) => {
-    clearTimeout(holdTimer);
-    if (down) { rig.rotate(dir); holdTimer = setTimeout(() => rig.setHold('rot', dir), 260); }
-    else rig.setHold('rot', 0);
-  },
-  onZoom: (dir, down) => {
-    clearTimeout(holdTimer);
-    if (down) { rig.zoom(dir); holdTimer = setTimeout(() => rig.setHold('zoom', dir), 260); }
-    else rig.setHold('zoom', 0);
-  },
   onTime: (h) => day.setHours(h),
   onWhistle: (on) => { whistling = on; audio.whistle(on); },
-  onMute: (m) => audio.setMuted(m),
 });
+// One in-game day lasts four real minutes; dragging the sun sets the clock
+// and the day carries on from there.
+const DAY_SECONDS = 240;
+let autoTime = !params.has('t');
 let whistling = false;
 let whistlePuff = 0;
 const keys = {};
@@ -109,6 +101,8 @@ addEventListener('keydown', (e) => {
   if (e.code === 'Equal' || e.code === 'NumpadAdd') { rig.zoom(1); rig.setHold('zoom', 1); }
   if (e.code === 'Minus' || e.code === 'NumpadSubtract') { rig.zoom(-1); rig.setHold('zoom', -1); }
   if (e.code === 'KeyH' || e.code === 'Space') { whistling = true; audio.whistle(true); e.preventDefault(); }
+  if (e.code === 'KeyP') { autoTime = !autoTime; hud.banner(autoTime ? 'Time is running' : 'Time paused', 2); }
+  if (e.code === 'KeyN') { audio.setMuted(!audio.muted); hud.banner(audio.muted ? 'Sound off' : 'Sound on <em>♪</em>', 2); }
   if (e.code === 'KeyM') hud.banner(audio.toggleMusic() ? 'Music on <em>♪</em>' : 'Music off', 2);
   if (e.code === 'BracketLeft') day.setHours(day.hours - 0.25);
   if (e.code === 'BracketRight') day.setHours(day.hours + 0.25);
@@ -262,6 +256,7 @@ function step(dt) {
   if (keys.KeyS || keys.ArrowDown) { overlay.setLever(overlay.lever + dt * 0.55); train.lever = overlay.lever; hud.hideHint(); }
   if (keys.KeyW || keys.ArrowUp) { overlay.setLever(overlay.lever - dt * 0.55); train.lever = overlay.lever; }
   shared.uTime.value += dt;
+  if (autoTime && overlay.drag?.kind !== 'sun') day.setHours(day.hours + (dt * 24) / DAY_SECONDS);
   train.update(dt);
   rig.update(dt);
   day.update(dt, camera, rig.focus, rig.dist);
@@ -337,7 +332,7 @@ requestAnimationFrame(frame);
 window.__game = {
   THREE, scene, camera, renderer, T, route, train, rig, day, overlay, hud, STATIONS, audio,
   ready: true,
-  setTime: (h) => day.setHours(h),
+  setTime: (h) => { autoTime = false; day.setHours(h); },
   setLever: (v) => { overlay.setLever(v, true); },
   teleport(s, opts = {}) { train.s = route.wrap(s); train.v = opts.v ?? 0; train.place(); lastS = train.s; rig.snap(); },
   simulate(seconds, dt = 1 / 30, draw = true) { for (let t = 0; t < seconds; t += dt) step(dt); if (draw) render(); },

@@ -24,11 +24,10 @@ npm run preview
 
 | Control | Action |
 | --- | --- |
-| **Lever** (bottom right) | drag **down** to open the regulator and gather speed; drag **up** to brake and stop. Detents click at STOP · ¼ · ½ · ¾ · FULL |
-| **Mini sun** (bottom left) | drag it along its arc to set the time of day, from sunrise in the east through midday, golden hour and sunset to night; below the horizon it becomes the moon |
-| **Camera buttons** | rotate left / right around the train, zoom in / out (tap for a step, hold to keep going) |
-| Mouse / touch | drag on the world to orbit, wheel to zoom |
-| Keyboard | `S`/`↓` lever down · `W`/`↑` lever up · `Q`/`E` rotate · `+`/`-` zoom · `H`/`Space` whistle · `M` music on/off · `[` `]` time of day |
+| **Lever** (bottom right) | drag **down** to open the regulator and gather speed; drag **up** to brake and stop. Detents click at STOP · ¼ · ½ · ¾ · FULL. The brass button above it blows the whistle |
+| **Day dial** (bottom left) | time runs by itself — one in-game day lasts four minutes. Drag the little sun round the dial to jump to any time: the upper half is the day from sunrise in the east to sunset in the west, the lower half is the night, when it becomes the moon |
+| Mouse / touch | drag on the world to orbit the camera, wheel to zoom |
+| Keyboard | `S`/`↓` lever down · `W`/`↑` lever up · `Q`/`E` rotate · `+`/`-` zoom · `H`/`Space` whistle · `P` pause/resume time · `[` `]` nudge time · `M` music on/off · `N` all sound on/off |
 
 Stop the locomotive beside the red **STOP** board at either station for a
 little reward. There is no score to chase — the point is the ride.

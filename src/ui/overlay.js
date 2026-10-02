@@ -7,7 +7,7 @@ import {
   PlaneGeometry, MeshBasicMaterial, MeshLambertMaterial, Color, MathUtils,
 } from 'three';
 import { BoxBuilder } from '../util/voxel.js';
-import { arcAngle, hoursFromArc, T_MIN, T_MAX } from '../lighting/daycycle.js';
+import { arcAngle, hoursFromArc } from '../lighting/daycycle.js';
 
 const WOOD = 0x8a5a36, WOOD_D = 0x6b4329, WOOD_L = 0xa8744a, IRON = 0x3a3d40, IRON_L = 0x55595d;
 const BRASS = 0xd6aa52, BRASS_D = 0xa8803a, CREAM = 0xf2e6c8, RED = 0xc0392b, INK = 0x4a2e1c;
@@ -68,12 +68,12 @@ function button(icon, size = 58, top = CREAM, side = WOOD) {
 }
 
 export class Overlay {
-  constructor(renderer, { onLever, onRotate, onZoom, onTime, onWhistle, onMute, onNotch }) {
+  constructor(renderer, { onLever, onTime, onWhistle, onNotch }) {
     this.renderer = renderer;
     this.scene = new Scene();
     this.camera = new OrthographicCamera(0, 1, 1, 0, 1, 2000);
     this.camera.position.z = 800; // rays must start in front of every control
-    this.cb = { onLever, onRotate, onZoom, onTime, onWhistle, onMute, onNotch };
+    this.cb = { onLever, onTime, onWhistle, onNotch };
     const key = new DirectionalLight(0xffffff, 2.1);
     key.position.set(-0.5, 0.8, 1);
     this.scene.add(key, new AmbientLight(0xffffff, 1.05));
@@ -195,106 +195,90 @@ export class Overlay {
   // ----------------------------------------------------------- console --
   _buildConsole() {
     const g = (this.consoleGroup = new Group());
-    const W = 300, H = 270;
+    const W = 220, H = 220;
     const bb = new BoxBuilder();
     plate(bb, W, H);
-    // sky window behind the arc
-    this.arcC = new Vector3(0, 30, 0);
-    this.arcR = 96;
+    // the day dial: sky above the horizon, night ground below
+    this.arcC = new Vector3(0, -2, 0);
+    this.arcR = 76;
     const C = this.arcC;
-    bb.box(-W / 2 + 14, -10, 3, W / 2 - 14, H / 2 - 14, 4, 0x2a3a52);
-    // arc dots
-    const a0 = arcAngle(T_MIN), a1 = arcAngle(T_MAX);
-    for (let i = 0; i <= 44; i++) {
-      const a = a0 + (a1 - a0) * (i / 44);
+    bb.box(-W / 2 + 12, C.y, 3, W / 2 - 12, H / 2 - 12, 4, 0x2a3a52);
+    bb.box(-W / 2 + 12, -H / 2 + 12, 3, W / 2 - 12, C.y, 4, 0x1d2a22);
+    for (let i = 0; i < 56; i++) {
+      const a = (i / 56) * Math.PI * 2;
       const x = C.x + Math.cos(a) * this.arcR, y = C.y + Math.sin(a) * this.arcR;
-      const up = Math.sin(a) > 0;
-      bb.box(x - 3.5, y - 3.5, 4, x + 3.5, y + 3.5, 9, up ? 0xf6d98a : 0x6a7ab8);
+      bb.box(x - 3, y - 3, 4, x + 3, y + 3, 8, Math.sin(a) > 0.01 ? 0xf6d98a : 0x6a7ab8);
     }
-    // little voxel hills on the horizon line
-    bb.box(-W / 2 + 14, C.y - 4, 4, W / 2 - 14, C.y + 2, 12, 0x4f8a33);
-    const hills = [[-120, 14, 16], [-86, 26, 22], [-40, 12, 18], [10, 20, 26], [60, 30, 20], [104, 16, 18]];
+    // voxel hills along the horizon
+    bb.box(-W / 2 + 12, C.y - 4, 4, W / 2 - 12, C.y + 2, 12, 0x4f8a33);
+    const hills = [[-70, 12, 14], [-40, 22, 18], [0, 14, 16], [36, 24, 18], [72, 12, 14]];
     for (const [hx, hh, hw] of hills) {
       for (let s = 0; s < hh; s += 6) bb.box(hx - hw + s * 0.7, C.y + 2 + s, 6, hx + hw - s * 0.7, C.y + 8 + s, 12, s > hh - 8 ? 0xf2f6fa : 0x5f9a3c);
     }
-    bb.box(-W / 2 + 14, -10, 4, W / 2 - 14, C.y - 4, 12, 0x3f6d2c);
-    // E / W markers
+    // E / W markers just under the horizon
     const mark = (x, letter) => {
       const rows = letter === 'E' ? ['###', '#..', '##.', '#..', '###'] : ['#...#', '#...#', '#.#.#', '#.#.#', '.#.#.'];
       rows.forEach((r, y) => [...r].forEach((c, xx) => {
-        if (c === '#') bb.box(x + xx * 4, C.y - 14 - y * 4, 12, x + xx * 4 + 3.6, C.y - 10.4 - y * 4, 15, CREAM);
+        if (c === '#') bb.box(x + xx * 3.4, C.y - 12 - y * 3.4, 12, x + xx * 3.4 + 3, C.y - 9 - y * 3.4, 15, CREAM);
       }));
     };
-    mark(-W / 2 + 22, 'E');
-    mark(W / 2 - 42, 'W');
-    // time plaque
-    bb.box(-46, -12, 10, 46, 18, 16, IRON);
-    bb.box(-42, -8, 16, 42, 14, 17, 0x1a1c1e);
+    mark(-W / 2 + 18, 'E');
+    mark(W / 2 - 35, 'W');
+    // time plaque in the night half of the dial
+    this.plateY = C.y - 34;
+    bb.box(-40, this.plateY - 13, 10, 40, this.plateY + 13, 16, IRON);
+    bb.box(-36, this.plateY - 9, 16, 36, this.plateY + 9, 17, 0x1a1c1e);
     g.add(meshOf(bb));
 
     // mini sun (draggable) and moon
     const sun = (this.sun = new Group());
     const sb = new BoxBuilder();
-    sb.box(-14, -14, 0, 14, 14, 18, 0xffd24a);
-    sb.box(-10, -10, 18, 10, 10, 21, 0xfff1a0);
+    sb.box(-11, -11, 0, 11, 11, 16, 0xffd24a);
+    sb.box(-8, -8, 16, 8, 8, 19, 0xfff1a0);
     for (let i = 0; i < 8; i++) {
       const a = (i / 8) * Math.PI * 2;
-      const r = i % 2 ? 21 : 24;
-      sb.box(Math.cos(a) * r - 4, Math.sin(a) * r - 4, 2, Math.cos(a) * r + 4, Math.sin(a) * r + 4, 12, 0xffb52e);
+      const r = i % 2 ? 16 : 19;
+      sb.box(Math.cos(a) * r - 3, Math.sin(a) * r - 3, 2, Math.cos(a) * r + 3, Math.sin(a) * r + 3, 11, 0xffb52e);
     }
     this.sunMesh = new Mesh(sb.geometry(), glowMat);
     sun.add(this.sunMesh);
     const mb = new BoxBuilder();
-    mb.box(-13, -13, 0, 13, 13, 16, 0xe8ecf6);
-    mb.box(-3, -10, 16, 13, 10, 19, 0x8a96b8);
-    mb.box(-8, 4, 16, -3, 8, 18, 0xc9d0e2);
+    mb.box(-11, -11, 0, 11, 11, 14, 0xe8ecf6);
+    mb.box(-2, -8, 14, 11, 8, 17, 0x8a96b8);
+    mb.box(-7, 3, 14, -2, 7, 16, 0xc9d0e2);
     this.moonMesh = new Mesh(mb.geometry(), glowMat);
     sun.add(this.moonMesh);
-    const sh = hitBox(64, 64, 30);
+    const sh = hitBox(54, 54, 30);
     sun.add(sh);
     this.sunHit = sh;
     sun.position.z = 14;
     g.add(sun);
-    const arcHit = new Mesh(new PlaneGeometry(W, H * 0.62), hitMat);
-    arcHit.position.set(0, 52, 20);
+    const arcHit = new Mesh(new PlaneGeometry(W, H), hitMat);
+    arcHit.position.set(0, 0, 20);
     g.add(arcHit);
     this.arcHit = arcHit;
 
     // compass (needle points to world north relative to the view)
     const comp = (this.compass = new Group());
-    comp.position.set(W / 2 - 34, H / 2 - 34, 10);
+    comp.position.set(W / 2 - 22, H / 2 - 22, 10);
     const cbb = new BoxBuilder();
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2;
-      cbb.box(Math.cos(a) * 18 - 3, Math.sin(a) * 18 - 3, 0, Math.cos(a) * 18 + 3, Math.sin(a) * 18 + 3, 6, BRASS);
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      cbb.box(Math.cos(a) * 12 - 2.5, Math.sin(a) * 12 - 2.5, 0, Math.cos(a) * 12 + 2.5, Math.sin(a) * 12 + 2.5, 6, BRASS);
     }
-    cbb.box(-14, -14, -2, 14, 14, 2, CREAM);
+    cbb.box(-9, -9, -2, 9, 9, 2, CREAM);
     g.add((this.compassRing = meshOf(cbb)));
     this.compassRing.position.copy(comp.position);
     const nbb = new BoxBuilder();
-    nbb.box(-3, 0, 2, 3, 15, 6, RED);
-    nbb.box(-2, 15, 2, 2, 17, 6, RED);
-    nbb.box(-3, -15, 2, 3, 0, 6, 0x2f3a4a);
-    nbb.box(-3, -3, 6, 3, 3, 8, BRASS_D);
+    nbb.box(-2, 0, 2, 2, 10, 6, RED);
+    nbb.box(-2, -10, 2, 2, 0, 6, 0x2f3a4a);
+    nbb.box(-2, -2, 6, 2, 2, 8, BRASS_D);
     comp.add(meshOf(nbb));
     g.add(comp);
 
-    // camera buttons
-    this.btns = {
-      rotL: button('rotL'), rotR: button('rotR'), zoomIn: button('zoomIn'), zoomOut: button('zoomOut'),
-    };
-    const order = ['rotL', 'rotR', 'zoomIn', 'zoomOut'];
-    order.forEach((k, i) => {
-      const b = this.btns[k];
-      b.position.set(-W / 2 + 44 + i * 70.5, -H / 2 + 50, 4);
-      g.add(b);
-    });
+    this.btns = {};
     this.consoleSize = { W, H };
     this.scene.add(g);
-
-    // mute button (top-right of the screen)
-    this.muteBtn = button('sound', 40);
-    this.scene.add(this.muteBtn);
   }
 
   // ------------------------------------------------------------ layout --
@@ -303,7 +287,8 @@ export class Overlay {
     this.W = w; this.H = h;
     this.camera.left = 0; this.camera.right = w; this.camera.top = h; this.camera.bottom = 0;
     this.camera.updateProjectionMatrix();
-    const u = MathUtils.clamp(Math.min(w / 1150, h / 760), 0.5, 1.25);
+    // kept small and discreet so the landscape stays the focus
+    const u = MathUtils.clamp(Math.min(w / 1150, h / 760), 0.5, 1.25) * 0.66;
     this.u = u;
     const m = 14;
     const L = this.leverGroup, Cg = this.consoleGroup;
@@ -314,9 +299,6 @@ export class Overlay {
     // a slight tilt gives the blocks visible depth
     L.rotation.set(-0.22, -0.26, 0);
     Cg.rotation.set(-0.22, 0.26, 0);
-    this.muteBtn.scale.setScalar(u);
-    this.muteBtn.position.set(w - m - 28 * u, h - m - 28 * u, 0);
-    this.muteBtn.rotation.set(-0.2, -0.2, 0);
   }
 
   // Screen-space anchor points for HTML labels (CSS px from top-left).
@@ -334,7 +316,7 @@ export class Overlay {
     return {
       stop: lab(0), full: lab(1),
       speed: proj(L, new Vector3(this.dialCenter.x - 4, this.dialCenter.y - 56, 14)),
-      time: proj(Cg, new Vector3(0, 3, 17)),
+      time: proj(Cg, new Vector3(0, this.plateY, 17)),
       u: this.u,
     };
   }
@@ -375,13 +357,11 @@ export class Overlay {
 
   _bind(dom) {
     const buttons = () => [
-      ...Object.values(this.btns).map((b) => b.userData.hit), this.whistleBtn.userData.hit, this.muteBtn.userData.hit,
+      this.whistleBtn.userData.hit,
     ];
     const plates = () => [this.leverGroup.children[0], this.consoleGroup.children[0]];
     const findBtn = (hit) => {
-      for (const [k, b] of Object.entries(this.btns)) if (b.userData.hit === hit) return [k, b];
       if (this.whistleBtn.userData.hit === hit) return ['whistle', this.whistleBtn];
-      if (this.muteBtn.userData.hit === hit) return ['mute', this.muteBtn];
       return null;
     };
     addEventListener('pointerdown', (e) => {
@@ -403,12 +383,7 @@ export class Overlay {
           const [k, b] = fb;
           b.userData.pressed = 1;
           this.drag = { kind: 'button', key: k, btn: b, id: e.pointerId, t0: performance.now() };
-          if (k === 'rotL') this.cb.onRotate(1, true);
-          if (k === 'rotR') this.cb.onRotate(-1, true);
-          if (k === 'zoomIn') this.cb.onZoom(1, true);
-          if (k === 'zoomOut') this.cb.onZoom(-1, true);
           if (k === 'whistle') this.cb.onWhistle(true);
-          if (k === 'mute') { this.muted = !this.muted; this.cb.onMute(this.muted); this._setMuteIcon(); }
         } else this.drag = { kind: 'plate', id: e.pointerId };
       }
     }, { capture: true });
@@ -428,9 +403,6 @@ export class Overlay {
       if (this.drag.kind === 'button') {
         const k = this.drag.key, b = this.drag.btn;
         b.userData.pressed = 0;
-        const held = performance.now() - this.drag.t0 > 260;
-        if (k === 'rotL' || k === 'rotR') this.cb.onRotate(0, false, held);
-        if (k === 'zoomIn' || k === 'zoomOut') this.cb.onZoom(0, false, held);
         if (k === 'whistle') this.cb.onWhistle(false);
       }
       this.drag = null;
@@ -438,15 +410,6 @@ export class Overlay {
     };
     addEventListener('pointerup', up);
     addEventListener('pointercancel', up);
-  }
-
-  _setMuteIcon() {
-    const cap = this.muteBtn.userData.cap;
-    const old = this.muteBtn;
-    const nb = button(this.muted ? 'mute' : 'sound', 40);
-    old.remove(cap);
-    old.add(nb.userData.cap);
-    old.userData.cap = nb.userData.cap;
   }
 
   _nearQuadrant(e) {
@@ -477,13 +440,7 @@ export class Overlay {
 
   _dragSun(e) {
     const p = this._localOn(e, this.consoleGroup, 24);
-    let th = Math.atan2(p.y - this.arcC.y, p.x - this.arcC.x);
-    const a0 = arcAngle(T_MIN), a1 = arcAngle(T_MAX);
-    if (th < a1 && th < -Math.PI / 2) th += Math.PI * 2;
-    // bottom gap: snap to nearest end
-    if (th > a0) th = a0;
-    if (th < a1) th = a1;
-    this.cb.onTime(hoursFromArc(th));
+    this.cb.onTime(hoursFromArc(Math.atan2(p.y - this.arcC.y, p.x - this.arcC.x)));
   }
 
   // -------------------------------------------------------------- frame --
@@ -507,7 +464,7 @@ export class Overlay {
     // compass: north (-z) relative to the camera's view
     this.compass.rotation.z = cameraYaw;
     // buttons
-    const btnList = [...Object.values(this.btns), this.whistleBtn, this.muteBtn];
+    const btnList = [this.whistleBtn];
     for (const b of btnList) {
       const ud = b.userData;
       ud.depth = (ud.depth ?? 0) + ((ud.pressed ? -9 : 0) - (ud.depth ?? 0)) * (1 - Math.exp(-dt * 30));

@@ -38,12 +38,21 @@ function sampleNum(keys, e) {
   return keys[keys.length - 1][1];
 }
 
-// Arc angle used both by the 3D sun and by the UI mini-sun.
+// Arc angle used both by the 3D sun and by the UI day dial. One full turn
+// is one day: the day (sunrise→sunset) sweeps the upper half from east to
+// west, the night sweeps the lower half back round to the east.
+const DAY_LEN = SUNSET - SUNRISE, NIGHT_LEN = 24 - DAY_LEN;
+export const wrapHours = (h) => ((h % 24) + 24) % 24;
 export function arcAngle(hours) {
-  return Math.PI * (1 - (hours - SUNRISE) / (SUNSET - SUNRISE));
+  let h = wrapHours(hours);
+  if (h < SUNRISE) h += 24;
+  if (h <= SUNSET) return Math.PI * (1 - (h - SUNRISE) / DAY_LEN);
+  return -Math.PI * ((h - SUNSET) / NIGHT_LEN);
 }
 export function hoursFromArc(theta) {
-  return SUNRISE + (1 - theta / Math.PI) * (SUNSET - SUNRISE);
+  const t = Math.atan2(Math.sin(theta), Math.cos(theta));
+  if (t >= 0) return SUNRISE + (1 - t / Math.PI) * DAY_LEN;
+  return wrapHours(SUNSET + (-t / Math.PI) * NIGHT_LEN);
 }
 
 export function sunDirection(hours, out = new Vector3()) {
@@ -154,7 +163,7 @@ export class DayCycle {
     this.shadowRadius = 170;
   }
 
-  setHours(h) { this.hours = clamp(h, T_MIN, T_MAX); }
+  setHours(h) { this.hours = wrapHours(h); }
 
   update(dt, camera, focus, viewDist = 30) {
     const h = this.hours;
